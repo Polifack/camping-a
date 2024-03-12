@@ -107,25 +107,6 @@ public class PlayerController : MonoBehaviour
 
     }
 
-    void handleInteract()
-    {
-        // 1. raycast forward
-        RaycastHit hit;
-
-        if (Physics.Raycast(transform.position, transform.forward, out hit, 3f))
-        {
-            // 2. if we hit an interactable object, display the interactable UI
-            Interactable interactable = hit.collider.GetComponent<Interactable>();
-            if (interactable != null)
-            {
-                // 3. if the player presses the interact button, interact with the object
-                //if (_playerInput.CharacterControls.Interact.triggered)
-                //    interactable.Interact();
-                Debug.Log("Interacting with " + interactable.name);
-            }
-        }
-    }
-
     void handleAnimation()
     {
         if (_isMovementPressed && (!_isFalling || !_isJumping))

@@ -127,12 +127,30 @@ public class PlayerStateMachine : MonoBehaviour
 
         Quaternion currentRotation = transform.rotation;
 
-        if (_isMovementPressed)
+        if (_isMovementPressed && positionToLookAt != Vector3.zero)
         {
             Quaternion targetRotation = Quaternion.LookRotation(positionToLookAt);
             transform.rotation = Quaternion.Slerp(currentRotation, targetRotation, _rotationFactorPerFrame * Time.deltaTime);
         }
 
+    }
+    void handleInteract()
+    {
+        // 1. raycast forward
+        Debug.DrawRay(transform.position + new Vector3(0, 1, 0), transform.forward * 3, Color.red);
+        RaycastHit hit;
+        Ray r = new Ray(transform.position + new Vector3(0, 1, 0), transform.forward * 3);
+        float distance = 3f;
+
+        if (Physics.Raycast(r, out hit, distance))
+        {
+            // 2. if we hit an interactable object, display the interactable UI
+            Interactable interactable = hit.collider.GetComponent<Interactable>();
+            if (interactable != null)
+            {
+                interactable.EnableInteract();
+            }
+        }
     }
 
     void Update()
@@ -141,6 +159,8 @@ public class PlayerStateMachine : MonoBehaviour
         // raycast towards the ground checking if distance is less than 0.1f and hitting object of layer 3 (ground)
         _isGrounded = Physics.Raycast(transform.position, Vector3.down, 0.1f, 1 << 3);
         _currentState.UpdateStates();
+
+        handleInteract();
 
         if (_canMove)
         {
@@ -171,6 +191,7 @@ public class PlayerStateMachine : MonoBehaviour
 
     //     Debug.Log("Head: " + head + " Torso: " + torso);
     // }
+
 
     Vector3 ConvertToCameraSpace(Vector3 vectorToRotate)
     {
