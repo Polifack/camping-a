@@ -47,6 +47,9 @@ public class PlayerController : MonoBehaviour
         _playerInput.CharacterControls.Jump.started += onJump;
         _playerInput.CharacterControls.Jump.canceled += onJump;
 
+        // ??????? 
+        // _playerInput.CharacterControls.Interact.started += ctx => handleInteract();
+
         setupJumpVariables();
 
     }
@@ -102,6 +105,25 @@ public class PlayerController : MonoBehaviour
             transform.rotation = Quaternion.Slerp(currentRotation, targetRotation, _rotationFactorPerFrame * Time.deltaTime);
         }
 
+    }
+
+    void handleInteract()
+    {
+        // 1. raycast forward
+        RaycastHit hit;
+
+        if (Physics.Raycast(transform.position, transform.forward, out hit, 3f))
+        {
+            // 2. if we hit an interactable object, display the interactable UI
+            Interactable interactable = hit.collider.GetComponent<Interactable>();
+            if (interactable != null)
+            {
+                // 3. if the player presses the interact button, interact with the object
+                //if (_playerInput.CharacterControls.Interact.triggered)
+                //    interactable.Interact();
+                Debug.Log("Interacting with " + interactable.name);
+            }
+        }
     }
 
     void handleAnimation()

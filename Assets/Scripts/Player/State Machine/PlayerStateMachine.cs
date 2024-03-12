@@ -137,8 +137,9 @@ public class PlayerStateMachine : MonoBehaviour
 
     void Update()
     {
-        _isGrounded = _characterController.isGrounded;
-
+        // _isGrounded = _characterController.isGrounded;
+        // raycast towards the ground checking if distance is less than 0.1f and hitting object of layer 3 (ground)
+        _isGrounded = Physics.Raycast(transform.position, Vector3.down, 0.1f, 1 << 3);
         _currentState.UpdateStates();
 
         if (_canMove)
