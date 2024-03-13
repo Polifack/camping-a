@@ -17,6 +17,8 @@ public class GameManager : MonoBehaviour
 
     public bool isDay = true;
 
+    public AudioSource audioSource;
+
     // add an editor script to change the material of the skybox
     public void ChangeSkybox(bool isDay)
     {

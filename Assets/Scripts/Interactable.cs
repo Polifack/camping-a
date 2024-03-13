@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using System;
+using UnityEngine.Events;
 
 public class Interactable : MonoBehaviour
 {
@@ -13,9 +15,12 @@ public class Interactable : MonoBehaviour
     public TextMeshPro text;
     public SpriteRenderer frame;
 
+    public UnityEvent interactCoroutine; // Coroutine to handle the interaction
+
     public virtual void Interact()
     {
         Debug.Log("Interacting with " + interactableName);
+        interactCoroutine.Invoke();
     }
 
     public void RotateText()
@@ -50,6 +55,13 @@ public class Interactable : MonoBehaviour
         {
             text.text = content.Substring(0, i);
             yield return new WaitForSeconds(delay);
+
+            if (!isInteractable) // If the object is no longer interactable, stop writing
+            {
+                text.text = "";
+                isWriting = false;
+                yield break;
+            }
         }
     }
 
@@ -59,7 +71,12 @@ public class Interactable : MonoBehaviour
         {
             text.enabled = true;
             RotateText();
-            StartCoroutine(writeText("Jugar al " + interactableName + "?", 0.05f));
+            StartCoroutine(writeText("Usar " + interactableName + "?", 0.05f));
+
+            if (Input.GetKeyDown(KeyCode.E))
+            {
+                Interact();
+            }
         }
         else if (!isInteractable)
         {
