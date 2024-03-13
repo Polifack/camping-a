@@ -7,7 +7,7 @@ using UnityEngine.Events;
 
 public class Interactable : MonoBehaviour
 {
-    public string interactableName;
+    public string interactablePrompt;
     
     private bool isInteractable = false;
     private bool isWriting = false;
@@ -19,7 +19,7 @@ public class Interactable : MonoBehaviour
 
     public virtual void Interact()
     {
-        Debug.Log("Interacting with " + interactableName);
+        Debug.Log(interactablePrompt);
         interactCoroutine.Invoke();
     }
 
@@ -51,7 +51,7 @@ public class Interactable : MonoBehaviour
         if (isWriting) yield break; // Exit the coroutine if it is already running
 
         isWriting = true; // Set the flag to indicate that the coroutine is running
-        for (int i = 0; i < content.Length; i++)
+        for (int i = 0; i <= content.Length; i++)
         {
             text.text = content.Substring(0, i);
             yield return new WaitForSeconds(delay);
@@ -71,7 +71,7 @@ public class Interactable : MonoBehaviour
         {
             text.enabled = true;
             RotateText();
-            StartCoroutine(writeText("Usar " + interactableName + "?", 0.05f));
+            StartCoroutine(writeText(interactablePrompt, 0.05f));
 
             if (Input.GetKeyDown(KeyCode.E))
             {

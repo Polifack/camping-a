@@ -177,11 +177,12 @@ public class PlayerStateMachine : MonoBehaviour
         DebugVisualizeRaycasts();
     }
 
+
+    /// mover a una clase aparte en la que se guarden todas las acciones
     public IEnumerator PerformAction(string actionName, Vector3 moveTo, Vector3 newRotation, AudioClip playAudio)
     {
         // plays an animation and restores to normal state afterwards
         Vector3 oldPosition = transform.position;
-        
 
         _gravity = 0;
         _canMove = false;
