@@ -120,7 +120,7 @@ ModelImporter:
       maskSource: {instanceID: 0}
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
-      name: 1.0_Idle_Relaxed
+      name: 1.0_Idle_Relaxed.001
       takeName: 1.0_Idle_Relaxed.001
       internalID: 5652920630962691373
       firstFrame: 0
@@ -178,7 +178,7 @@ ModelImporter:
       maskSource: {instanceID: 0}
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
-      name: 1.2_Run
+      name: 1.2_Run.001
       takeName: 1.2_Run.001
       internalID: 5342397945844014131
       firstFrame: 0
@@ -236,7 +236,7 @@ ModelImporter:
       maskSource: {instanceID: 0}
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
-      name: 1.2_Walk
+      name: 1.2_Walk.001
       takeName: 1.2_Walk.001
       internalID: 3261351734735417648
       firstFrame: 0
@@ -352,7 +352,7 @@ ModelImporter:
       maskSource: {instanceID: 0}
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
-      name: 2.1_Fall
+      name: 2.1_Fall.001
       takeName: 2.1_Fall.001
       internalID: 6278873254157608925
       firstFrame: 0
@@ -410,7 +410,7 @@ ModelImporter:
       maskSource: {instanceID: 0}
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
-      name: 2.2_Falling
+      name: 2.2_Falling.001
       takeName: 2.2_Falling.001
       internalID: -5366015398729142054
       firstFrame: 0
@@ -468,7 +468,7 @@ ModelImporter:
       maskSource: {instanceID: 0}
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
-      name: 2.3_Landing
+      name: 2.3_Landing.001
       takeName: 2.3_Landing.001
       internalID: 1340944040715167874
       firstFrame: 0
@@ -526,7 +526,7 @@ ModelImporter:
       maskSource: {instanceID: 0}
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
-      name: 2.4_LedgeGrab
+      name: 2.4_LedgeGrab.001
       takeName: 2.4_LedgeGrab.001
       internalID: -1282156415971095245
       firstFrame: 0
@@ -653,7 +653,7 @@ ModelImporter:
       cycleOffset: 0
       loop: 0
       hasAdditiveReferencePose: 0
-      loopTime: 0
+      loopTime: 1
       loopBlend: 0
       loopBlendOrientation: 0
       loopBlendPositionY: 0
@@ -671,7 +671,7 @@ ModelImporter:
       maskSource: {instanceID: 0}
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
-      name: 5.0_Punch1_Charge
+      name: 5.0_Punch1_Charge.001
       takeName: 5.0_Punch1_Charge.001
       internalID: 1092708476194063670
       firstFrame: 0
@@ -729,7 +729,7 @@ ModelImporter:
       maskSource: {instanceID: 0}
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
-      name: 5.0_Punch2_Charge
+      name: 5.0_Punch2_Charge.001
       takeName: 5.0_Punch2_Charge.001
       internalID: 5363165000090531386
       firstFrame: 0
@@ -787,11 +787,11 @@ ModelImporter:
       maskSource: {instanceID: 0}
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
-      name: rig|0.0_Tpose
-      takeName: rig|0.0_Tpose
-      internalID: -8288986840788711572
+      name: rig|1.0_Idle
+      takeName: rig|1.0_Idle
+      internalID: 657209365584659946
       firstFrame: 0
-      lastFrame: 0
+      lastFrame: 38
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
