@@ -113,7 +113,8 @@ public class PlayerStateMachine : MonoBehaviour
 
     void onAttack(InputAction.CallbackContext context)
     {
-        _isAttackPressed = context.ReadValueAsButton();
+        //_isAttackPressed = context.ReadValueAsButton();
+        _isAttackPressed = false;
     }
 
 
@@ -174,6 +175,35 @@ public class PlayerStateMachine : MonoBehaviour
 
         //Debug
         DebugVisualizeRaycasts();
+    }
+
+    public IEnumerator PerformAction(string actionName, Vector3 moveTo, Vector3 newRotation, AudioClip playAudio)
+    {
+        // plays an animation and restores to normal state afterwards
+        Vector3 oldPosition = transform.position;
+        
+
+        _gravity = 0;
+        _canMove = false;
+        transform.position = moveTo;
+        transform.rotation = Quaternion.Euler(newRotation);
+        _animator.Play(actionName);
+        Debug.Log(playAudio);
+        GameManager.instance.audioSource.PlayOneShot(playAudio);
+        
+        yield return new WaitForSeconds(5);
+
+        Debug.Log("resetting");
+        _gravity = -9.8f;
+        _canMove = true;
+        transform.position = oldPosition;
+        _animator.Play("Idle");
+
+        // if audio is playing, stop it
+        if (GameManager.instance.audioSource.isPlaying)
+        {
+            GameManager.instance.audioSource.Stop();
+        }
     }
 
     // void FixedUpdate()
