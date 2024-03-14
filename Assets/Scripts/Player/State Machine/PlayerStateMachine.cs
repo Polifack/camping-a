@@ -2,23 +2,100 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using KinematicCharacterController;
+using UnityEditorInternal;
 
-public class PlayerStateMachine : MonoBehaviour
+public enum CharacterState
+{
+    Default, LedgeGrabbing, Swimming, Interacting
+}
+
+public enum OrientationMethod
+{
+    TowardsCamera,
+    TowardsMovement,
+}
+
+// public struct PlayerCharacterInputs
+// {
+//     public float MoveAxisForward;
+//     public float MoveAxisRight;
+//     public Quaternion CameraRotation;
+//     public bool JumpDown;
+//     public bool CrouchDown;
+//     public bool CrouchUp;
+// }
+
+public struct PlayerCharacterInputs
+{
+    public float MoveAxisForward;
+    public float MoveAxisRight;
+    public bool IsMovementPressed;
+
+    public Quaternion CameraRotation;
+
+    public bool JumpDown;
+    public bool JumpUp;
+
+    public bool CrouchDown;
+    public bool CrouchUp;
+
+    public bool Attack1Down;
+    public bool Attack1Up;
+
+    public bool InteractDown;
+    public bool InteractUp;
+}
+
+public struct AICharacterInputs
+{
+    public Vector3 MoveVector;
+    public Vector3 LookVector;
+}
+
+public enum BonusOrientationMethod
+{
+    None,
+    TowardsGravity,
+    TowardsGroundSlopeAndGravity,
+}
+
+public class PlayerStateMachine : MonoBehaviour, ICharacterController
 {
     [Header("References")]
-    [SerializeField] public PlayerInput _playerInput;
-    [SerializeField] public CharacterController _characterController;
-    [SerializeField] public Animator _animator;
 
-    [Header("Movement")]
-    [SerializeField] public bool _canMove = true;
-    [SerializeField] public Vector2 _currentMovementInput;
-    [SerializeField] public Vector3 _currentMovement;
-    [SerializeField] public Vector3 _appliedMovement;
-    [SerializeField] public Vector3 _cameraRelativeMovement;
-    [SerializeField] public bool _isMovementPressed;
-    [SerializeField] public float _speedMultiplier = 15f;
-    [SerializeField] public float _rotationFactorPerFrame = 15f;
+    //[SerializeField] public CharacterController _characterController;
+    [SerializeField] public Animator _animator;
+    public KinematicCharacterMotor Motor;
+
+    [Header("Stable Movement")]
+    public float MaxStableMoveSpeed = 10f;
+    public float StableMovementSharpness = 15f;
+    public float OrientationSharpness = 10f;
+    public OrientationMethod OrientationMethod = OrientationMethod.TowardsCamera;
+
+    [Header("Air Movement")]
+    public float MaxAirMoveSpeed = 15f;
+    public float AirAccelerationSpeed = 15f;
+    public float Drag = 0.1f;
+
+    [Header("Jumping")]
+    public bool AllowJumpingWhenSliding = false;
+    public float JumpUpSpeed = 10f;
+    public float JumpScalableForwardSpeed = 10f;
+    public float JumpPreGroundingGraceTime = 0f;
+    public float JumpPostGroundingGraceTime = 0f;
+
+    [Header("Misc")]
+    public List<Collider> IgnoredColliders = new List<Collider>();
+    public BonusOrientationMethod BonusOrientationMethod = BonusOrientationMethod.None;
+    public float BonusOrientationSharpness = 10f;
+    public Vector3 Gravity = new Vector3(0, -30f, 0);
+    public Transform MeshRoot;
+    public Transform CameraFollowPoint;
+    public float CrouchedCapsuleHeight = 1f;
+
+    //MERDA VELLA
 
     [Header("Ledge Grab")]
     [SerializeField] public Transform _headRaycast;
@@ -31,110 +108,642 @@ public class PlayerStateMachine : MonoBehaviour
     [SerializeField] public Vector3 _ledgeGrabDirection;
 
 
-    [Header("Gravity")]
-    [SerializeField] public float _gravity = -9.8f;
-    [SerializeField] public bool _isFalling = false;
-    [SerializeField] public float _fallMultiplier = 2.0f;
-    [SerializeField] public bool _isGrounded;
-
-
-    [Header("Jumping")]
-    [SerializeField] public float _maxJumpHeight = 1f;
-    [SerializeField] public float _maxJumpTime = 0.75f;
-    public float _initialJumpVelocity;
-    [SerializeField] public bool _isJumpPressed = false;
-    [SerializeField] public bool _isJumping = false;
-    [SerializeField] public bool _requiredNewJumpPress = false;
-
-
     [Header("Attack")]
     [SerializeField] public bool _isAttackPressed = false;
 
+    //END MERDA VELLA 
 
-    [Header("States")]
-    [SerializeField] public PlayerBaseState _currentState;
-    [SerializeField] public PlayerStateFactory _states;
+    public CharacterState CurrentCharacterState { get; private set; }
 
-    void Awake()
-    {   
-        //Reference variables
-        _playerInput = new PlayerInput();
-        _characterController = GetComponent<CharacterController>();
+    private Collider[] _probedColliders = new Collider[8];
+    private RaycastHit[] _probedHits = new RaycastHit[8];
+    public Vector3 _moveInputVector;
+    private Vector3 _lookInputVector;
+    private bool _jumpRequested = false;
+    private bool _jumpConsumed = false;
+    private bool _jumpedThisFrame = false;
+    private float _timeSinceJumpRequested = Mathf.Infinity;
+    private float _timeSinceLastAbleToJump = 0f;
+    private Vector3 _internalVelocityAdd = Vector3.zero;
+    private bool _shouldBeCrouching = false;
+    private bool _isCrouching = false;
+
+    private Vector3 lastInnerNormal = Vector3.zero;
+    private Vector3 lastOuterNormal = Vector3.zero;
+
+    //MERDA MIÑA
+    public bool IsMovementPressed = false;
+    public bool CanMove = true;
+
+    [Header("Interacting")]
+
+    public Vector3 InteractablePosition;
+    public Quaternion InteractableRotation;
+
+    private void Awake()
+    {
+
+        // Assign the characterController to the motor
+        Motor.CharacterController = this;
+
+        // Handle initial state
+        TransitionToState(CharacterState.Default);
+
+        //_characterController = GetComponent<CharacterController>();
+        _animator = GetComponentInChildren<Animator>();
+        //_characterController = GetComponent<CharacterController>();
         _animator = GetComponentInChildren<Animator>();
 
-        //States
-        _states = new PlayerStateFactory(this);
-        _currentState = _states.Grounded();
-        _currentState.EnterState();
-
-        //Input callbacks
-        //Movement
-        _playerInput.CharacterControls.Move.started += onMovementInput;
-        _playerInput.CharacterControls.Move.canceled += onMovementInput;
-        _playerInput.CharacterControls.Move.performed += onMovementInput;
-        
-        //Jump
-        _playerInput.CharacterControls.Jump.started += onJump;
-        _playerInput.CharacterControls.Jump.canceled += onJump;
-
-        //Attack
-        _playerInput.CharacterControls.Attack.started += onAttack;
-        _playerInput.CharacterControls.Attack.canceled += onAttack;
-
-        setupJumpVariables();
     }
 
-    void Start()
+    /// <summary>
+    /// Handles movement state transitions and enter/exit callbacks
+    /// </summary>
+    public void TransitionToState(CharacterState newState)
     {
-        _characterController.Move(_appliedMovement * Time.deltaTime);
+        CharacterState tmpInitialState = CurrentCharacterState;
+        OnStateExit(tmpInitialState, newState);
+        CurrentCharacterState = newState;
+        OnStateEnter(newState, tmpInitialState);
     }
 
-    void setupJumpVariables()
+    /// <summary>
+    /// Event when entering a state
+    /// </summary>
+    public void OnStateEnter(CharacterState state, CharacterState fromState)
     {
-        float timeToApex = _maxJumpTime/2;
-        _gravity = (-2 * _maxJumpHeight) / Mathf.Pow(timeToApex,2);
-        _initialJumpVelocity = (2* _maxJumpHeight)/timeToApex;
-    }
-
-    void onMovementInput (InputAction.CallbackContext context)
-    {
-        _currentMovementInput = context.ReadValue<Vector2>();
-        _currentMovement.x = _currentMovementInput.x;
-        _currentMovement.z = _currentMovementInput.y;
-        _isMovementPressed = _currentMovementInput.x != 0 || _currentMovementInput.y != 0;
-
-    }
-
-    void onJump(InputAction.CallbackContext context)
-    {
-        _isJumpPressed = context.ReadValueAsButton();
-        _requiredNewJumpPress = false;
-    }
-
-    void onAttack(InputAction.CallbackContext context)
-    {
-        //_isAttackPressed = context.ReadValueAsButton();
-        _isAttackPressed = false;
-    }
-
-
-    void handleRotation()
-    {
-        Vector3 positionToLookAt;
-
-        positionToLookAt.x = _cameraRelativeMovement.x;
-        positionToLookAt.y = 0f;
-        positionToLookAt.z = _cameraRelativeMovement.z;
-
-        Quaternion currentRotation = transform.rotation;
-
-        if (_isMovementPressed && positionToLookAt != Vector3.zero)
+        switch (state)
         {
-            Quaternion targetRotation = Quaternion.LookRotation(positionToLookAt);
-            transform.rotation = Quaternion.Slerp(currentRotation, targetRotation, _rotationFactorPerFrame * Time.deltaTime);
+            case CharacterState.Default:
+                {
+                    CanMove = true;
+                    break;
+                }
+
+            case CharacterState.Interacting:
+                {
+                    Motor.SetMovementCollisionsSolvingActivation(false);
+                    Motor.SetGroundSolvingActivation(false);
+
+                    _animator.SetBool("isInteracting", true);
+                    CanMove = false;
+                    break;
+                }
+        }
+    }
+
+    /// <summary>
+    /// Event when exiting a state
+    /// </summary>
+    public void OnStateExit(CharacterState state, CharacterState toState)
+    {
+        switch (state)
+        {
+            case CharacterState.Default:
+                {
+                    break;
+                }
+            case CharacterState.Interacting:
+                {
+                    Motor.SetMovementCollisionsSolvingActivation(true);
+                    Motor.SetGroundSolvingActivation(true);
+
+                    _animator.SetBool("isInteracting", false);
+
+                    break;
+                }
+        }
+    }
+
+    /// <summary>
+    /// This is called every frame by ExamplePlayer in order to tell the character what its inputs are
+    /// </summary>
+    public void SetInputs(ref PlayerCharacterInputs inputs)
+    {
+        // Check for pressing movement keys
+        IsMovementPressed = inputs.IsMovementPressed;
+
+        // Clamp input
+        Vector3 moveInputVector = Vector3.ClampMagnitude(new Vector3(inputs.MoveAxisRight, 0f, inputs.MoveAxisForward), 1f);
+
+        // Calculate camera direction and rotation on the character plane
+        Vector3 cameraPlanarDirection = Vector3.ProjectOnPlane(inputs.CameraRotation * Vector3.forward, Motor.CharacterUp).normalized;
+        if (cameraPlanarDirection.sqrMagnitude == 0f)
+        {
+            cameraPlanarDirection = Vector3.ProjectOnPlane(inputs.CameraRotation * Vector3.up, Motor.CharacterUp).normalized;
+        }
+        Quaternion cameraPlanarRotation = Quaternion.LookRotation(cameraPlanarDirection, Motor.CharacterUp);
+
+        switch (CurrentCharacterState)
+        {
+            // Grounded + Airborne
+            case CharacterState.Default:
+                {
+                    // Move and look inputs
+                    _moveInputVector = cameraPlanarRotation * moveInputVector;
+
+                    switch (OrientationMethod)
+                    {
+                        case OrientationMethod.TowardsCamera:
+                            _lookInputVector = cameraPlanarDirection;
+                            break;
+                        case OrientationMethod.TowardsMovement:
+                            _lookInputVector = _moveInputVector.normalized;
+                            break;
+                    }
+
+                    // Jumping input
+                    if (inputs.JumpDown)
+                    {
+                        _timeSinceJumpRequested = 0f;
+                        _jumpRequested = true;
+                    }
+
+                    // Crouching input
+                    if (inputs.CrouchDown)
+                    {
+                        _shouldBeCrouching = true;
+
+                        if (!_isCrouching)
+                        {
+                            _isCrouching = true;
+                            Motor.SetCapsuleDimensions(0.5f, CrouchedCapsuleHeight, CrouchedCapsuleHeight * 0.5f);
+                            MeshRoot.localScale = new Vector3(1f, 0.5f, 1f);
+                        }
+                    }
+                    else if (inputs.CrouchUp)
+                    {
+                        _shouldBeCrouching = false;
+                    }
+
+                    // Interacting input
+                    if (inputs.InteractDown)
+                    {
+                        //TransitionToState(CharacterState.Interacting);
+                    }
+
+                    break;
+                }
+            case CharacterState.Interacting:
+                {
+                    break;
+                }
+        }
+    }
+
+    
+
+    /// <summary>
+    /// This is called every frame by the AI script in order to tell the character what its inputs are
+    /// </summary>
+    public void SetInputs(ref AICharacterInputs inputs)
+    {
+        _moveInputVector = inputs.MoveVector;
+        _lookInputVector = inputs.LookVector;
+    }
+
+    private Quaternion _tmpTransientRot;
+
+    /// <summary>
+    /// (Called by KinematicCharacterMotor during its update cycle)
+    /// This is called before the character begins its movement update
+    /// </summary>
+    public void BeforeCharacterUpdate(float deltaTime)
+    {
+        // Handle animation calls
+        switch (CurrentCharacterState)
+        {
+            // Grounded + Airborne
+            case CharacterState.Default:
+                {
+                    // Grounded
+                    if (Motor.GroundingStatus.IsStableOnGround)
+                    {
+                        _animator.SetBool("isFalling", false);
+
+                        if (IsMovementPressed)
+                        {
+                            _animator.SetBool("isRunning", true);
+                        }
+                        else
+                        {
+                            _animator.SetBool("isRunning", false);
+                        }
+
+                        if (_jumpRequested)
+                        {
+                            _animator.SetBool("isJumping", true);
+                        }
+                        else
+                        {
+                            _animator.SetBool("isJumping", false);
+                        }
+                    }
+                    // Airborne
+                    else
+                    {
+                        _animator.SetBool("isFalling", true);
+                    }
+                    break;
+                }
+            case CharacterState.Interacting:
+                {
+                    //_animator.SetBool("isInteracting", true);
+                    break;
+                }
         }
 
+        handleInteract();
+
+        //Debug
+        DebugVisualizeRaycasts();
     }
+
+    /// <summary>
+    /// (Called by KinematicCharacterMotor during its update cycle)
+    /// This is where you tell your character what its rotation should be right now. 
+    /// This is the ONLY place where you should set the character's rotation
+    /// </summary>
+    public void UpdateRotation(ref Quaternion currentRotation, float deltaTime)
+    {
+        switch (CurrentCharacterState)
+        {
+            // Grounded + Airborne
+            case CharacterState.Default:
+                {
+                    if (_lookInputVector.sqrMagnitude > 0f && OrientationSharpness > 0f)
+                    {
+                        // Smoothly interpolate from current to target look direction
+                        Vector3 smoothedLookInputDirection = Vector3.Slerp(Motor.CharacterForward, _lookInputVector, 1 - Mathf.Exp(-OrientationSharpness * deltaTime)).normalized;
+
+                        // Set the current rotation (which will be used by the KinematicCharacterMotor)
+                        currentRotation = Quaternion.LookRotation(smoothedLookInputDirection, Motor.CharacterUp);
+                    }
+
+                    Vector3 currentUp = (currentRotation * Vector3.up);
+                    if (BonusOrientationMethod == BonusOrientationMethod.TowardsGravity)
+                    {
+                        // Rotate from current up to invert gravity
+                        Vector3 smoothedGravityDir = Vector3.Slerp(currentUp, -Gravity.normalized, 1 - Mathf.Exp(-BonusOrientationSharpness * deltaTime));
+                        currentRotation = Quaternion.FromToRotation(currentUp, smoothedGravityDir) * currentRotation;
+                    }
+                    else if (BonusOrientationMethod == BonusOrientationMethod.TowardsGroundSlopeAndGravity)
+                    {
+                        if (Motor.GroundingStatus.IsStableOnGround)
+                        {
+                            Vector3 initialCharacterBottomHemiCenter = Motor.TransientPosition + (currentUp * Motor.Capsule.radius);
+
+                            Vector3 smoothedGroundNormal = Vector3.Slerp(Motor.CharacterUp, Motor.GroundingStatus.GroundNormal, 1 - Mathf.Exp(-BonusOrientationSharpness * deltaTime));
+                            currentRotation = Quaternion.FromToRotation(currentUp, smoothedGroundNormal) * currentRotation;
+
+                            // Move the position to create a rotation around the bottom hemi center instead of around the pivot
+                            Motor.SetTransientPosition(initialCharacterBottomHemiCenter + (currentRotation * Vector3.down * Motor.Capsule.radius));
+                        }
+                        else
+                        {
+                            Vector3 smoothedGravityDir = Vector3.Slerp(currentUp, -Gravity.normalized, 1 - Mathf.Exp(-BonusOrientationSharpness * deltaTime));
+                            currentRotation = Quaternion.FromToRotation(currentUp, smoothedGravityDir) * currentRotation;
+                        }
+                    }
+                    else
+                    {
+                        Vector3 smoothedGravityDir = Vector3.Slerp(currentUp, Vector3.up, 1 - Mathf.Exp(-BonusOrientationSharpness * deltaTime));
+                        currentRotation = Quaternion.FromToRotation(currentUp, smoothedGravityDir) * currentRotation;
+                    }
+                    break;
+                }
+
+            case CharacterState.Interacting:
+                {
+                    currentRotation = _tmpTransientRot;
+                    Motor.SetRotation(InteractableRotation);
+                    break;
+                }
+        }
+    }
+
+    /// <summary>
+    /// (Called by KinematicCharacterMotor during its update cycle)
+    /// This is where you tell your character what its velocity should be right now. 
+    /// This is the ONLY place where you can set the character's velocity
+    /// </summary>
+    public void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime)
+    {
+        switch (CurrentCharacterState)
+        {
+            // Grounded + Airborne
+            case CharacterState.Default:
+                {
+                    // Ground movement
+                    if (Motor.GroundingStatus.IsStableOnGround)
+                    {
+                        float currentVelocityMagnitude = currentVelocity.magnitude;
+
+                        Vector3 effectiveGroundNormal = Motor.GroundingStatus.GroundNormal;
+
+                        // Reorient velocity on slope
+                        currentVelocity = Motor.GetDirectionTangentToSurface(currentVelocity, effectiveGroundNormal) * currentVelocityMagnitude;
+
+                        // Calculate target velocity
+                        Vector3 inputRight = Vector3.Cross(_moveInputVector, Motor.CharacterUp);
+                        Vector3 reorientedInput = Vector3.Cross(effectiveGroundNormal, inputRight).normalized * _moveInputVector.magnitude;
+                        Vector3 targetMovementVelocity = reorientedInput * MaxStableMoveSpeed;
+
+                        // Smooth movement Velocity
+                        currentVelocity = Vector3.Lerp(currentVelocity, targetMovementVelocity, 1f - Mathf.Exp(-StableMovementSharpness * deltaTime));
+                    }
+                    // Air movement
+                    else
+                    {
+                        // Add move input
+                        if (_moveInputVector.sqrMagnitude > 0f)
+                        {
+                            Vector3 addedVelocity = _moveInputVector * AirAccelerationSpeed * deltaTime;
+
+                            Vector3 currentVelocityOnInputsPlane = Vector3.ProjectOnPlane(currentVelocity, Motor.CharacterUp);
+
+                            // Limit air velocity from inputs
+                            if (currentVelocityOnInputsPlane.magnitude < MaxAirMoveSpeed)
+                            {
+                                // clamp addedVel to make total vel not exceed max vel on inputs plane
+                                Vector3 newTotal = Vector3.ClampMagnitude(currentVelocityOnInputsPlane + addedVelocity, MaxAirMoveSpeed);
+                                addedVelocity = newTotal - currentVelocityOnInputsPlane;
+                            }
+                            else
+                            {
+                                // Make sure added vel doesn't go in the direction of the already-exceeding velocity
+                                if (Vector3.Dot(currentVelocityOnInputsPlane, addedVelocity) > 0f)
+                                {
+                                    addedVelocity = Vector3.ProjectOnPlane(addedVelocity, currentVelocityOnInputsPlane.normalized);
+                                }
+                            }
+
+                            // Prevent air-climbing sloped walls
+                            if (Motor.GroundingStatus.FoundAnyGround)
+                            {
+                                if (Vector3.Dot(currentVelocity + addedVelocity, addedVelocity) > 0f)
+                                {
+                                    Vector3 perpenticularObstructionNormal = Vector3.Cross(Vector3.Cross(Motor.CharacterUp, Motor.GroundingStatus.GroundNormal), Motor.CharacterUp).normalized;
+                                    addedVelocity = Vector3.ProjectOnPlane(addedVelocity, perpenticularObstructionNormal);
+                                }
+                            }
+
+                            // Apply added velocity
+                            currentVelocity += addedVelocity;
+                        }
+
+                        // Gravity
+                        currentVelocity += Gravity * deltaTime;
+
+                        // Drag
+                        currentVelocity *= (1f / (1f + (Drag * deltaTime)));
+                    }
+
+                    // Handle jumping
+                    _jumpedThisFrame = false;
+                    _timeSinceJumpRequested += deltaTime;
+                    if (_jumpRequested)
+                    {
+                        // See if we actually are allowed to jump
+                        if (!_jumpConsumed && ((AllowJumpingWhenSliding ? Motor.GroundingStatus.FoundAnyGround : Motor.GroundingStatus.IsStableOnGround) || _timeSinceLastAbleToJump <= JumpPostGroundingGraceTime))
+                        {
+                            // Calculate jump direction before ungrounding
+                            Vector3 jumpDirection = Motor.CharacterUp;
+                            if (Motor.GroundingStatus.FoundAnyGround && !Motor.GroundingStatus.IsStableOnGround)
+                            {
+                                jumpDirection = Motor.GroundingStatus.GroundNormal;
+                            }
+
+                            // Makes the character skip ground probing/snapping on its next update. 
+                            // If this line weren't here, the character would remain snapped to the ground when trying to jump. Try commenting this line out and see.
+                            Motor.ForceUnground();
+
+                            // Add to the return velocity and reset jump state
+                            currentVelocity += (jumpDirection * JumpUpSpeed) - Vector3.Project(currentVelocity, Motor.CharacterUp);
+                            currentVelocity += (_moveInputVector * JumpScalableForwardSpeed);
+                            _jumpRequested = false;
+                            _jumpConsumed = true;
+                            _jumpedThisFrame = true;
+                        }
+                    }
+
+                    // Take into account additive velocity
+                    if (_internalVelocityAdd.sqrMagnitude > 0f)
+                    {
+                        currentVelocity += _internalVelocityAdd;
+                        _internalVelocityAdd = Vector3.zero;
+                    }
+                    break;
+                }
+
+            case CharacterState.Interacting:
+                {
+                    currentVelocity = Vector3.zero;
+                    Motor.SetPosition(InteractablePosition);
+                    break;
+                }
+        }
+    }
+
+    /// <summary>
+    /// (Called by KinematicCharacterMotor during its update cycle)
+    /// This is called after the character has finished its movement update
+    /// </summary>
+    public void AfterCharacterUpdate(float deltaTime)
+    {
+        switch (CurrentCharacterState)
+        {
+            case CharacterState.Default:
+                {
+                    // Handle jump-related values
+                    {
+                        // Handle jumping pre-ground grace period
+                        if (_jumpRequested && _timeSinceJumpRequested > JumpPreGroundingGraceTime)
+                        {
+                            _jumpRequested = false;
+                        }
+
+                        if (AllowJumpingWhenSliding ? Motor.GroundingStatus.FoundAnyGround : Motor.GroundingStatus.IsStableOnGround)
+                        {
+                            // If we're on a ground surface, reset jumping values
+                            if (!_jumpedThisFrame)
+                            {
+                                _jumpConsumed = false;
+                            }
+                            _timeSinceLastAbleToJump = 0f;
+                        }
+                        else
+                        {
+                            // Keep track of time since we were last able to jump (for grace period)
+                            _timeSinceLastAbleToJump += deltaTime;
+                        }
+                    }
+
+                    // Handle uncrouching
+                    if (_isCrouching && !_shouldBeCrouching)
+                    {
+                        // Do an overlap test with the character's standing height to see if there are any obstructions
+                        Motor.SetCapsuleDimensions(0.5f, 2f, 1f);
+                        if (Motor.CharacterOverlap(
+                            Motor.TransientPosition,
+                            Motor.TransientRotation,
+                            _probedColliders,
+                            Motor.CollidableLayers,
+                            QueryTriggerInteraction.Ignore) > 0)
+                        {
+                            // If obstructions, just stick to crouching dimensions
+                            Motor.SetCapsuleDimensions(0.5f, CrouchedCapsuleHeight, CrouchedCapsuleHeight * 0.5f);
+                        }
+                        else
+                        {
+                            // If no obstructions, uncrouch
+                            MeshRoot.localScale = new Vector3(1f, 1f, 1f);
+                            _isCrouching = false;
+                        }
+                    }
+                    break;
+                }
+            case CharacterState.Interacting:
+                {
+                    break;
+                }
+        }
+    }
+
+    public void PostGroundingUpdate(float deltaTime)
+    {
+        // Handle landing and leaving ground
+        if (Motor.GroundingStatus.IsStableOnGround && !Motor.LastGroundingStatus.IsStableOnGround)
+        {
+            OnLanded();
+        }
+        else if (!Motor.GroundingStatus.IsStableOnGround && Motor.LastGroundingStatus.IsStableOnGround)
+        {
+            OnLeaveStableGround();
+        }
+    }
+
+    public bool IsColliderValidForCollisions(Collider coll)
+    {
+        if (IgnoredColliders.Count == 0)
+        {
+            return true;
+        }
+
+        if (IgnoredColliders.Contains(coll))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    public void OnGroundHit(Collider hitCollider, Vector3 hitNormal, Vector3 hitPoint, ref HitStabilityReport hitStabilityReport)
+    {
+    }
+
+    public void OnMovementHit(Collider hitCollider, Vector3 hitNormal, Vector3 hitPoint, ref HitStabilityReport hitStabilityReport)
+    {
+    }
+
+    public void AddVelocity(Vector3 velocity)
+    {
+        switch (CurrentCharacterState)
+        {
+            case CharacterState.Default:
+                {
+                    _internalVelocityAdd += velocity;
+                    break;
+                }
+        }
+    }
+
+    public void ProcessHitStabilityReport(Collider hitCollider, Vector3 hitNormal, Vector3 hitPoint, Vector3 atCharacterPosition, Quaternion atCharacterRotation, ref HitStabilityReport hitStabilityReport)
+    {
+    }
+
+    protected void OnLanded()
+    {
+    }
+
+    protected void OnLeaveStableGround()
+    {
+    }
+
+    public void OnDiscreteCollisionDetected(Collider hitCollider)
+    {
+    }
+
+    //TODO esta merda ten que comprobarse durante o falling state, e usando a variable "_canLedgeGrab"
+
+    // private void CheckLedgeGrabBoxCast()
+    // {
+    //     Vector3 boxSize = new Vector3(_ctx._ledgeGrabSize.x, 0.05f, _ctx._ledgeGrabSize.y);
+    //     RaycastHit headHit;
+    //     RaycastHit torsoHit;
+
+    //     // Player layer is 3, thus ignore it when casting
+    //     // int layerMask = 1 << 3;
+    //     // layerMask = ~layerMask;
+        
+    //     bool head = Physics.BoxCast(_ctx._headRaycast.position, boxSize, _ctx.transform.forward, out headHit, _ctx.transform.rotation, _ctx._ledgeGrabDistance, Physics.AllLayers);
+    //     bool torso = Physics.BoxCast(_ctx._torsoRaycast.position, boxSize, _ctx.transform.forward, out torsoHit, _ctx.transform.rotation, _ctx._ledgeGrabDistance, Physics.AllLayers);
+
+    //     if (!head)
+    //     {
+    //         if (torso)
+    //         {
+    //             // Get the ledge grab position and direction from the torso hit
+    //             // and apply offset to the ledge grab position
+    //             _ctx._ledgeGrabPosition = torsoHit.point;
+    //             _ctx._ledgeGrabDirection = torsoHit.normal;
+    //             _ctx._ledgeGrabPosition += _ctx._ledgeGrabDirection * _ctx._ledgeGrabOffset;
+
+    //             // Switch to the ledge grab state
+    //             SwitchState(_factory.LedgeGrab());
+    //         }
+    //     }
+        
+    // }
+
+    //TODO toda esta merda vai no estado "LedgGrab", hai que converrtilo todo á nova lógica de movemento
+
+    // public void HandleGravity()
+    // {
+    //     float previousYVelocity = _ctx._currentMovement.y;
+    //     _ctx._currentMovement.y = 0f;
+    //     _ctx._appliedMovement.y = 0f;
+    // }
+
+    // public override void EnterState()
+    // {
+    //     InitializeSubState();
+    //     _ctx._animator.SetBool("isLedgeGrabbing", true);
+    //     _ctx._canMove = false;
+
+    //     //Rotate the player to face the ledge
+    //     _ctx.transform.rotation = Quaternion.LookRotation(-_ctx._ledgeGrabDirection, Vector3.up);
+    //     //Move the player to the ledge grab position, which is the ledge grab raycast hit point plus an offset to prevent the player from clipping into the ledge
+    //     _ctx.transform.position = _ctx.transform.position + (_ctx._ledgeGrabDirection * _ctx._ledgeGrabOffset);
+
+    // }
+
+    // public override void ExitState()
+    // {
+    //     _ctx._animator.SetBool("isLedgeGrabbing", false);
+    //     _ctx._canMove = true;
+    //     //Disable the raycast for a certain amount of time in order to prevent the player from grabbing the same ledge again
+    //     _ctx.StartCoroutine(WaitToReEnableLedgeGrab());
+    // }
+
+    //     public IEnumerator WaitToReEnableLedgeGrab()
+    // {
+    //     _ctx._canLedgeGrab = false;
+    //     yield return new WaitForSeconds(0.5f);
+    //     _ctx._canLedgeGrab = true;
+    // }
+
+
     void handleInteract()
     {
         // 1. raycast forward
@@ -154,29 +763,6 @@ public class PlayerStateMachine : MonoBehaviour
         }
     }
 
-    void Update()
-    {
-        // _isGrounded = _characterController.isGrounded;
-        // raycast towards the ground checking if distance is less than 0.1f and hitting object of layer 3 (ground)
-        _isGrounded = Physics.Raycast(transform.position, Vector3.down, 0.1f, 1 << 3);
-        _currentState.UpdateStates();
-
-        handleInteract();
-
-        if (_canMove)
-        {
-            //Camera relative movement
-            _cameraRelativeMovement = ConvertToCameraSpace(_appliedMovement);
-            _characterController.Move(_cameraRelativeMovement * _speedMultiplier * Time.deltaTime);
-            
-            //Rotation after calculating relative movement
-            handleRotation();
-        }
-
-        //Debug
-        DebugVisualizeRaycasts();
-    }
-
 
     /// mover a una clase aparte en la que se guarden todas las acciones
     public IEnumerator PerformAction(string actionName, Vector3 moveTo, Vector3 newRotation, AudioClip playAudio)
@@ -184,21 +770,30 @@ public class PlayerStateMachine : MonoBehaviour
         // plays an animation and restores to normal state afterwards
         Vector3 oldPosition = transform.position;
 
-        _gravity = 0;
-        _canMove = false;
-        transform.position = moveTo;
-        transform.rotation = Quaternion.Euler(newRotation);
+        TransitionToState(CharacterState.Interacting);
+
+        //_gravity = 0;
+        //_canMove = false;
+
+        //Motor.SetPosition(moveTo);
+        //Motor.SetRotation(Quaternion.Euler(newRotation));
+        InteractablePosition = moveTo;
+        InteractableRotation = Quaternion.Euler(newRotation);
+
         _animator.Play(actionName);
         Debug.Log(playAudio);
         GameManager.instance.audioSource.PlayOneShot(playAudio);
         
         yield return new WaitForSeconds(5);
 
+        //TransitionToState(CharacterState.Default);
+
         Debug.Log("resetting");
-        _gravity = -9.8f;
-        _canMove = true;
-        transform.position = oldPosition;
-        _animator.Play("Idle");
+        //_gravity = -9.8f;
+        //_canMove = true;
+        //Motor.SetPosition(oldPosition);
+
+        //_animator.Play("Idle");
 
         // if audio is playing, stop it
         if (GameManager.instance.audioSource.isPlaying)
@@ -207,80 +802,23 @@ public class PlayerStateMachine : MonoBehaviour
         }
     }
 
-    // void FixedUpdate()
+    // void OnEnable()
     // {
-    //     Vector3 boxSize = new Vector3(_ledgeGrabSize, 0.1f, _ledgeGrabSize);
-    //     RaycastHit headHit;
-    //     RaycastHit torsoHit;
-
-    //     // Player layer is 3, thus ignore it when casting
-    //     int layerMask = 1 << 3;
-    //     layerMask = ~layerMask;
-
-    //     bool head = Physics.BoxCast(_headRaycast.position, boxSize, transform.forward, out headHit, Quaternion.identity, _ledgeGrabSize *2f, Physics.AllLayers);
-    //     bool torso = Physics.BoxCast(_torsoRaycast.position, boxSize, transform.forward, out torsoHit, Quaternion.identity, _ledgeGrabSize *2f, Physics.AllLayers);
-
-    //     Debug.Log("Head: " + head + " Torso: " + torso);
+    //     _playerInput.CharacterControls.Enable();
     // }
 
-
-    Vector3 ConvertToCameraSpace(Vector3 vectorToRotate)
-    {
-        Vector3 cameraForward = Camera.main.transform.forward;
-        Vector3 cameraRight = Camera.main.transform.right;
-
-        cameraForward.y = 0;
-        cameraRight.y = 0;
-
-        cameraForward = cameraForward.normalized;
-        cameraRight = cameraRight.normalized;
-
-        Vector3 cameraForwardZProduct = vectorToRotate.z * cameraForward;
-        Vector3 cameraRightXProduct = vectorToRotate.x * cameraRight;
-
-        Vector3 vectorRotateToCameraSpace = cameraForwardZProduct + cameraRightXProduct;
-        vectorRotateToCameraSpace.y = vectorToRotate.y;
-
-        return vectorRotateToCameraSpace;
-    }
-
-    void OnEnable()
-    {
-        _playerInput.CharacterControls.Enable();
-    }
-
-    void OnDisable()
-    {
-        _playerInput.CharacterControls.Disable();
-    }
+    // void OnDisable()
+    // {
+    //     _playerInput.CharacterControls.Disable();
+    // }
 
     void DebugVisualizeRaycasts()
     {
-        //Debug.DrawRay(_headRaycast.position, _headRaycast.forward * _ledgeGrabSize, Color.red);
-        //Debug.DrawRay(_torsoRaycast.position, _torsoRaycast.forward * _ledgeGrabSize, Color.red);
 
-        // Visualize the box cast drawing spheres at the vertices of the box
-        // Debug.DrawRay(_headRaycast.position + new Vector3(0, (0.1f / 2), 0), _headRaycast.forward * _ledgeGrabDistance, Color.red);
-        // Debug.DrawRay(_headRaycast.position - new Vector3(0, (0.1f / 2), 0), _headRaycast.forward * _ledgeGrabDistance, Color.red);
-        // Debug.DrawRay(_headRaycast.position + new Vector3((_ledgeGrabSize / 2), 0, 0), _headRaycast.forward * _ledgeGrabDistance, Color.red);
-        // Debug.DrawRay(_headRaycast.position - new Vector3((_ledgeGrabSize / 2), 0, 0), _headRaycast.forward * _ledgeGrabDistance, Color.red);
-        // Debug.DrawRay(_headRaycast.position + new Vector3(0, 0, (_ledgeGrabSize / 2)), _headRaycast.forward * _ledgeGrabDistance, Color.red);
-        // Debug.DrawRay(_headRaycast.position - new Vector3(0, 0, (_ledgeGrabSize / 2)), _headRaycast.forward * _ledgeGrabDistance, Color.red);
         Vector3 boxSize = new Vector3(_ledgeGrabSize.x, 0.05f, _ledgeGrabSize.y);
 
         DrawBoxCastBox(_headRaycast.position, boxSize, transform.rotation, transform.forward, _ledgeGrabDistance, Color.red);
         DrawBoxCastBox(_torsoRaycast.position, boxSize, transform.rotation, transform.forward, _ledgeGrabDistance, Color.blue);
-
-        // Debug.DrawRay(_torsoRaycast.position + new Vector3(0, (0.1f / 2), 0), _torsoRaycast.forward * _ledgeGrabDistance, Color.blue);
-        // Debug.DrawRay(_torsoRaycast.position - new Vector3(0, (0.1f / 2), 0), _torsoRaycast.forward * _ledgeGrabDistance, Color.blue);
-        // Debug.DrawRay(_torsoRaycast.position + new Vector3((_ledgeGrabSize / 2), 0, 0), _torsoRaycast.forward * _ledgeGrabDistance, Color.blue);
-        // Debug.DrawRay(_torsoRaycast.position - new Vector3((_ledgeGrabSize / 2), 0, 0), _torsoRaycast.forward * _ledgeGrabDistance, Color.blue);
-        // Debug.DrawRay(_torsoRaycast.position + new Vector3(0, 0, (_ledgeGrabSize / 2)), _torsoRaycast.forward * _ledgeGrabDistance, Color.blue);
-        // Debug.DrawRay(_torsoRaycast.position - new Vector3(0, 0, (_ledgeGrabSize / 2)), _torsoRaycast.forward * _ledgeGrabDistance, Color.blue);
-
-
-        
-
 
     }
 
