@@ -127,8 +127,8 @@ public class PlayerControls : MonoBehaviour
         characterInputs.CrouchDown = Input.GetKeyDown(KeyCode.C);
         characterInputs.CrouchUp = Input.GetKeyUp(KeyCode.C);
 
-        characterInputs.Attack1Down = Input.GetKeyDown(KeyCode.Mouse0);
-        characterInputs.Attack1Up = Input.GetKeyUp(KeyCode.Mouse0);
+        characterInputs.Attack1Down = Input.GetKeyDown(KeyCode.Mouse1);
+        characterInputs.Attack1Up = Input.GetKeyUp(KeyCode.Mouse1);
 
         characterInputs.InteractDown = Input.GetKeyDown(KeyCode.E);
         characterInputs.InteractUp = Input.GetKeyUp(KeyCode.E);

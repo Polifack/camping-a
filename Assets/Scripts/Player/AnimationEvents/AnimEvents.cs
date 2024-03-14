@@ -4,15 +4,16 @@ using UnityEngine;
 
 public class AnimEvents : MonoBehaviour
 {
-    // Start is called before the first frame update
+    public PlayerStateMachine playerStateMachine;
+
     void Start()
     {
-        
+        playerStateMachine = GetComponentInParent<PlayerStateMachine>();
     }
 
-    // Update is called once per frame
-    void Update()
+    public void ReturnToDefaultState()
     {
-        
+        playerStateMachine.TransitionToState(CharacterState.Default);
     }
+    
 }
