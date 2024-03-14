@@ -7,7 +7,7 @@ using UnityEditorInternal;
 
 public enum CharacterState
 {
-    Default, LedgeGrabbing, Swimming, Interacting
+    Default, LedgeGrabbing, Swimming, Interacting, Punch1
 }
 
 public enum OrientationMethod
@@ -133,7 +133,6 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
 
     //MERDA MIÑA
     public bool IsMovementPressed = false;
-    public bool CanMove = true;
 
     [Header("Interacting")]
 
@@ -176,7 +175,9 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
         {
             case CharacterState.Default:
                 {
-                    CanMove = true;
+                    Motor.SetMovementCollisionsSolvingActivation(true);
+                    Motor.SetGroundSolvingActivation(true);
+
                     break;
                 }
 
@@ -186,7 +187,15 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                     Motor.SetGroundSolvingActivation(false);
 
                     _animator.SetBool("isInteracting", true);
-                    CanMove = false;
+                    break;
+                }
+            case CharacterState.Punch1:
+                {
+                    Motor.SetMovementCollisionsSolvingActivation(false);
+                    Motor.SetGroundSolvingActivation(false);
+
+                    //_animator.SetBool("isPunching", true);
+                    _animator.CrossFade("Punch1_C", 0.2f);
                     break;
                 }
         }
@@ -280,6 +289,11 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                     if (inputs.InteractDown)
                     {
                         //TransitionToState(CharacterState.Interacting);
+                    }
+
+                    if (inputs.Attack1Down)
+                    {
+                        TransitionToState(CharacterState.Punch1);
                     }
 
                     break;
@@ -419,6 +433,12 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                     Motor.SetRotation(InteractableRotation);
                     break;
                 }
+
+            case CharacterState.Punch1:
+                {
+                    //currentRotation = _tmpTransientRot;
+                    break;
+                }
         }
     }
 
@@ -540,6 +560,12 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                 {
                     currentVelocity = Vector3.zero;
                     Motor.SetPosition(InteractablePosition);
+                    break;
+                }
+
+            case CharacterState.Punch1:
+                {
+                    currentVelocity = Vector3.zero;
                     break;
                 }
         }
