@@ -871,6 +871,18 @@ PrefabInstance:
       propertyPath: m_Name
       value: SantiParent
       objectReference: {fileID: 0}
+    - target: {fileID: 6131766309591171467, guid: afd49a45c318aac44aa488db7cb8927c, type: 3}
+      propertyPath: comboList.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 6131766309591171467, guid: afd49a45c318aac44aa488db7cb8927c, type: 3}
+      propertyPath: comboList.Array.data[0]
+      value: Punch1_C
+      objectReference: {fileID: 0}
+    - target: {fileID: 6131766309591171467, guid: afd49a45c318aac44aa488db7cb8927c, type: 3}
+      propertyPath: comboList.Array.data[1]
+      value: Punch2_C
+      objectReference: {fileID: 0}
     - target: {fileID: 6736030091148433462, guid: afd49a45c318aac44aa488db7cb8927c, type: 3}
       propertyPath: m_LocalPosition.x
       value: -0.301

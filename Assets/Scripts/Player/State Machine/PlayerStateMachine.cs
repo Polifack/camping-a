@@ -7,7 +7,7 @@ using UnityEditorInternal;
 
 public enum CharacterState
 {
-    Default, LedgeGrabbing, Swimming, Interacting, Punch1
+    Default, LedgeGrabbing, Swimming, Interacting, Attack
 }
 
 public enum OrientationMethod
@@ -31,6 +31,7 @@ public struct PlayerCharacterInputs
     public bool CrouchUp;
 
     public bool Attack1Down;
+    public bool Attack1Held;
     public bool Attack1Up;
 
     public bool InteractDown;
@@ -49,6 +50,16 @@ public enum BonusOrientationMethod
     TowardsGravity,
     TowardsGroundSlopeAndGravity,
 }
+
+  //Struct used to set up the damage, knockback direction and amount of
+    //the basic combo attacks.
+// public struct GroundAttackData
+// {
+//     public string[] animName;
+//     // public float[] knockback;
+//     // public Vector3[] knockbackDir;
+//     // public float[] damage;
+// };
 
 public class PlayerStateMachine : MonoBehaviour, ICharacterController
 {
@@ -125,6 +136,13 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
     public Vector3 InteractablePosition;
     public Quaternion InteractableRotation;
 
+    [Header("Attacking")]
+    public bool canAttack = true;
+    public int currentCombo = 0;
+    //Create a string list array to store the combo list
+    
+    public string[] comboList;
+
     private void Awake()
     {
 
@@ -175,13 +193,15 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                     _animator.SetBool("isInteracting", true);
                     break;
                 }
-            case CharacterState.Punch1:
+            case CharacterState.Attack:
                 {
                     Motor.SetMovementCollisionsSolvingActivation(false);
                     Motor.SetGroundSolvingActivation(false);
 
+                    _animator.SetBool("holdingAttack1", true);
+
                     //_animator.SetBool("isPunching", true);
-                    _animator.CrossFade("Punch1_C", 0.2f);
+                    _animator.CrossFade(comboList[currentCombo], 0.1f);
                     break;
                 }
         }
@@ -228,6 +248,14 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
             cameraPlanarDirection = Vector3.ProjectOnPlane(inputs.CameraRotation * Vector3.up, Motor.CharacterUp).normalized;
         }
         Quaternion cameraPlanarRotation = Quaternion.LookRotation(cameraPlanarDirection, Motor.CharacterUp);
+
+        // Check para comprobar si se mant'en o boton pulsado. A logica con esta variable esta no componente animator
+        // Os checks de manter botons pulsados poden ir fora dos estados, por seguridade
+        // Se ves unha forma mellor, cambiao sen fallo
+        if (!inputs.Attack1Held)
+        {
+            _animator.SetBool("holdingAttack1", false);
+        }
 
         switch (CurrentCharacterState)
         {
@@ -279,13 +307,26 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
 
                     if (inputs.Attack1Down)
                     {
-                        TransitionToState(CharacterState.Punch1);
+                        TransitionToState(CharacterState.Attack);
                     }
 
                     break;
                 }
+
             case CharacterState.Interacting:
                 {
+                    break;
+                }
+            
+            case CharacterState.Attack:
+                {
+                    if (canAttack && inputs.Attack1Down)
+                    {   
+                        // ao pulsar o boton empeza a contar como held, hasta que se solte
+                        _animator.SetBool("holdingAttack1", true);
+                        // iniciar a animacion
+                        _animator.CrossFade(comboList[currentCombo], 0.1f);
+                    }
                     break;
                 }
         }
@@ -417,7 +458,7 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                     break;
                 }
 
-            case CharacterState.Punch1:
+            case CharacterState.Attack:
                 {
                     //currentRotation = _tmpTransientRot;
                     break;
@@ -546,8 +587,12 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                     break;
                 }
 
-            case CharacterState.Punch1:
-                {
+            case CharacterState.Attack:
+                {   
+                    // Aqui o interesante sería ter unha lista de ataques con velocidades distintas para cada un, de forma que
+                    // cada ataqeu te mova de forma distinta segun o que sea, por jemplo, un stinger movete a dios para adiante
+                    // o seu sería implementar unha lista de ataques e que cada elemento desa lista teña algo rollo
+                    // moveSpeed, knockback, knockbackDir, damage, etc
                     currentVelocity = Vector3.zero;
                     break;
                 }
@@ -613,6 +658,10 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                     break;
                 }
             case CharacterState.Interacting:
+                {
+                    break;
+                }
+            case CharacterState.Attack:
                 {
                     break;
                 }

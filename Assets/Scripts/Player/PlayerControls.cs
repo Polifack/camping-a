@@ -104,7 +104,7 @@ public class PlayerControls : MonoBehaviour
         CharacterCamera.UpdateWithInput(Time.deltaTime, scrollInput, lookInputVector);
 
         // Handle toggling zoom level
-        if (Input.GetMouseButtonDown(1))
+        if (Input.GetMouseButtonDown(3))
         {
             CharacterCamera.TargetDistance = (CharacterCamera.TargetDistance == 0f) ? CharacterCamera.DefaultDistance : 0f;
         }
@@ -128,6 +128,7 @@ public class PlayerControls : MonoBehaviour
         characterInputs.CrouchUp = Input.GetKeyUp(KeyCode.C);
 
         characterInputs.Attack1Down = Input.GetKeyDown(KeyCode.Mouse1);
+        characterInputs.Attack1Held = Input.GetKey(KeyCode.Mouse1);
         characterInputs.Attack1Up = Input.GetKeyUp(KeyCode.Mouse1);
 
         characterInputs.InteractDown = Input.GetKeyDown(KeyCode.E);
