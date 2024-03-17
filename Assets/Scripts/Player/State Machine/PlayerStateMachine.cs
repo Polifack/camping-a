@@ -290,41 +290,41 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
     /// </summary>
     public void SetInputs(ref PlayerCharacterInputs inputs)
     {
-        //Debug.Log("1 ///////////////////////////");
-        _ladderUpDownInput = inputs.MoveAxisForward;
-            if (inputs.InteractDown)
+        // Check for interaction input (works for ladders and other interactables)
+        if (inputs.InteractDown)
+        {
+            if (Motor.CharacterOverlap(Motor.TransientPosition, Motor.TransientRotation, _probedColliders, InteractionLayer, QueryTriggerInteraction.Collide) > 0)
             {
-                Debug.Log("2 ///////////////////////////");
-                if (Motor.CharacterOverlap(Motor.TransientPosition, Motor.TransientRotation, _probedColliders, InteractionLayer, QueryTriggerInteraction.Collide) > 0)
+                if (_probedColliders[0] != null)
                 {
-                    Debug.Log("3 ///////////////////////////");
-                    if (_probedColliders[0] != null)
+                    // Handle ladders
+                    MyLadder ladder = _probedColliders[0].gameObject.GetComponent<MyLadder>();
+                    if (ladder)
                     {
-                        Debug.Log("4 ///////////////////////////");
-                        // Handle ladders
-                        MyLadder ladder = _probedColliders[0].gameObject.GetComponent<MyLadder>();
-                        if (ladder)
+                        // Transition to ladder climbing state
+                        if (CurrentCharacterState == CharacterState.Default)
                         {
-                            Debug.Log("5 ///////////////////////////");
-                            // Transition to ladder climbing state
-                            if (CurrentCharacterState == CharacterState.Default)
-                            {
-                                Debug.Log("6 ///////////////////////////");
-                                _activeLadder = ladder;
-                                TransitionToState(CharacterState.Climbing);
-                            }
-                            // Transition back to default movement state
-                            else if (CurrentCharacterState == CharacterState.Climbing)
-                            {
-                                Debug.Log("7 ///////////////////////////");
-                                _climbingState = ClimbingState.DeAnchoring;
-                                _ladderTargetPosition = Motor.TransientPosition;
-                                _ladderTargetRotation = _rotationBeforeClimbing;
-                            }
+                            _activeLadder = ladder;
+                            TransitionToState(CharacterState.Climbing);
                         }
+                        // Transition back to default movement state
+                        else if (CurrentCharacterState == CharacterState.Climbing)
+                        {
+                            _climbingState = ClimbingState.DeAnchoring;
+                            _ladderTargetPosition = Motor.TransientPosition;
+                            _ladderTargetRotation = _rotationBeforeClimbing;
+                        }
+                    }
+
+                    // Handle other interactables
+                    else if (_probedColliders[0].gameObject.GetComponent<Interactable>())
+                    {
+                        //TransitionToState(CharacterState.Interacting);
                     }
                 }
             }
+        }
+        _ladderUpDownInput = inputs.MoveAxisForward;
 
         // Check for pressing movement keys. EWsto úsase solo para o animador, para transicionar a animación de idle a run
         // TODO: esto hai que eliminalo e cambiar a transición de idle -> andar -> correr mediante a velocidade que leve o menda
