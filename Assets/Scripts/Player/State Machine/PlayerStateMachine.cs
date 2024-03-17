@@ -1,13 +1,25 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
+//using UnityEngine.InputSystem;
 using KinematicCharacterController;
-using UnityEditorInternal;
+//using UnityEditorInternal;
 
 public enum CharacterState
 {
-    Default, LedgeGrabbing, Swimming, Interacting, Attack
+    Default, 
+    LedgeGrabbing, 
+    Swimming, 
+    Interacting, 
+    Attacking,
+    Climbing
+}
+
+public enum ClimbingState
+{
+    Anchoring,
+    Climbing,
+    DeAnchoring
 }
 
 public enum OrientationMethod
@@ -64,8 +76,6 @@ public enum BonusOrientationMethod
 public class PlayerStateMachine : MonoBehaviour, ICharacterController
 {
     [Header("References")]
-
-    //[SerializeField] public CharacterController _characterController;
     [SerializeField] public Animator _animator;
     public KinematicCharacterMotor Motor;
 
@@ -96,26 +106,48 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
     public Transform CameraFollowPoint;
     public float CrouchedCapsuleHeight = 1f;
 
+    [Header("Ladder Climbing")]
+    public float ClimbingSpeed = 4f;
+    public float AnchoringDuration = 0.25f;
+    public LayerMask InteractionLayer;
+
     //MERDA VELLA, non borrar que fai falta para refactorizar o ledgegrab
 
-    // [Header("Ledge Grab")]
-    [SerializeField] public Transform _headRaycast;
-    [SerializeField] public Transform _torsoRaycast;
+    [Header("Ledge Grab")]
+    [SerializeField] public Transform HeadRayCast;
+    [SerializeField] public Transform TorsoRaycast;
+    [SerializeField] public Vector2 LedgeGrabSize = new Vector2(0.3f, 0f);
+    [SerializeField] public float LedgeGrabDistance = 0.6f;
+    [SerializeField] public float LedgeGrabOffset = 0.1f;
+
     [SerializeField] public bool _canLedgeGrab = true;
-    [SerializeField] public Vector2 _ledgeGrabSize = new Vector2(0.3f, 0f);
-    [SerializeField] public float _ledgeGrabDistance = 0.6f;
-    [SerializeField] public float _ledgeGrabOffset = 0.1f;
     [SerializeField] public Vector3 _ledgeGrabPosition;
     [SerializeField] public Vector3 _ledgeGrabDirection;
 
     //END MERDA VELLA 
 
+    //MERDA MIÑA
+
+    [Header("Interacting")]
+    public Vector3 InteractablePosition;
+    public Quaternion InteractableRotation;
+    
+
+    [Header("Attacking")]
+    public bool canAttack = true;
+    public int currentCombo = 0;
+    //Create a string list array to store the combo list
+    public string[] comboList;
+
+
+    // PRIVATE VARIABLES --------------------------------------------------
     public CharacterState CurrentCharacterState { get; private set; }
 
     private Collider[] _probedColliders = new Collider[8];
     private RaycastHit[] _probedHits = new RaycastHit[8];
     public Vector3 _moveInputVector;
     private Vector3 _lookInputVector;
+    private bool IsMovementPressed = false;
     private bool _jumpRequested = false;
     private bool _jumpConsumed = false;
     private bool _jumpedThisFrame = false;
@@ -128,22 +160,34 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
     private Vector3 lastInnerNormal = Vector3.zero;
     private Vector3 lastOuterNormal = Vector3.zero;
 
-    //MERDA MIÑA
-    public bool IsMovementPressed = false;
+    // Ladder vars
+    private float _ladderUpDownInput;
+    private MyLadder _activeLadder { get; set; }
+    private ClimbingState _internalClimbingState;
+    private ClimbingState _climbingState
+    {
+        get
+        {
+            return _internalClimbingState;
+        }
+        set
+        {
+            _internalClimbingState = value;
+            _anchoringTimer = 0f;
+            _anchoringStartPosition = Motor.TransientPosition;
+            _anchoringStartRotation = Motor.TransientRotation;
+        }
+    }
+    private Vector3 _ladderTargetPosition;
+    private Quaternion _ladderTargetRotation;
+    private float _onLadderSegmentState = 0;
+    private float _anchoringTimer = 0f;
+    private Vector3 _anchoringStartPosition = Vector3.zero;
+    private Quaternion _anchoringStartRotation = Quaternion.identity;
+    private Quaternion _rotationBeforeClimbing = Quaternion.identity;
 
-    [Header("Interacting")]
 
-    public Vector3 InteractablePosition;
-    public Quaternion InteractableRotation;
-
-    [Header("Attacking")]
-    public bool canAttack = true;
-    public int currentCombo = 0;
-    //Create a string list array to store the combo list
-    
-    public string[] comboList;
-
-    private void Awake()
+    private void Start()
     {
 
         // Assign the characterController to the motor
@@ -152,9 +196,7 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
         // Handle initial state
         TransitionToState(CharacterState.Default);
 
-        //_characterController = GetComponent<CharacterController>();
-        _animator = GetComponentInChildren<Animator>();
-        //_characterController = GetComponent<CharacterController>();
+        // Get animator
         _animator = GetComponentInChildren<Animator>();
 
     }
@@ -175,6 +217,8 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
     /// </summary>
     public void OnStateEnter(CharacterState state, CharacterState fromState)
     {
+        // Debug the current state
+        //Debug.Log("Entering state: " + state.ToString());
         switch (state)
         {
             case CharacterState.Default:
@@ -193,7 +237,7 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                     _animator.SetBool("isInteracting", true);
                     break;
                 }
-            case CharacterState.Attack:
+            case CharacterState.Attacking:
                 {
                     Motor.SetMovementCollisionsSolvingActivation(false);
                     Motor.SetGroundSolvingActivation(false);
@@ -204,6 +248,19 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                     _animator.CrossFade(comboList[currentCombo], 0.1f);
                     break;
                 }
+            case CharacterState.Climbing:
+                    {
+                        _rotationBeforeClimbing = Motor.TransientRotation;
+
+                        Motor.SetMovementCollisionsSolvingActivation(false);
+                        Motor.SetGroundSolvingActivation(false);
+                        _climbingState = ClimbingState.Anchoring;
+
+                        // Store the target position and rotation to snap to
+                        _ladderTargetPosition = _activeLadder.ClosestPointOnLadderSegment(Motor.TransientPosition, out _onLadderSegmentState);
+                        _ladderTargetRotation = _activeLadder.transform.rotation;
+                        break;
+                    }
         }
     }
 
@@ -220,8 +277,6 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                 }
             case CharacterState.Interacting:
                 {
-                    Motor.SetMovementCollisionsSolvingActivation(true);
-                    Motor.SetGroundSolvingActivation(true);
 
                     _animator.SetBool("isInteracting", false);
 
@@ -235,7 +290,44 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
     /// </summary>
     public void SetInputs(ref PlayerCharacterInputs inputs)
     {
-        // Check for pressing movement keys
+        //Debug.Log("1 ///////////////////////////");
+        _ladderUpDownInput = inputs.MoveAxisForward;
+            if (inputs.InteractDown)
+            {
+                Debug.Log("2 ///////////////////////////");
+                if (Motor.CharacterOverlap(Motor.TransientPosition, Motor.TransientRotation, _probedColliders, InteractionLayer, QueryTriggerInteraction.Collide) > 0)
+                {
+                    Debug.Log("3 ///////////////////////////");
+                    if (_probedColliders[0] != null)
+                    {
+                        Debug.Log("4 ///////////////////////////");
+                        // Handle ladders
+                        MyLadder ladder = _probedColliders[0].gameObject.GetComponent<MyLadder>();
+                        if (ladder)
+                        {
+                            Debug.Log("5 ///////////////////////////");
+                            // Transition to ladder climbing state
+                            if (CurrentCharacterState == CharacterState.Default)
+                            {
+                                Debug.Log("6 ///////////////////////////");
+                                _activeLadder = ladder;
+                                TransitionToState(CharacterState.Climbing);
+                            }
+                            // Transition back to default movement state
+                            else if (CurrentCharacterState == CharacterState.Climbing)
+                            {
+                                Debug.Log("7 ///////////////////////////");
+                                _climbingState = ClimbingState.DeAnchoring;
+                                _ladderTargetPosition = Motor.TransientPosition;
+                                _ladderTargetRotation = _rotationBeforeClimbing;
+                            }
+                        }
+                    }
+                }
+            }
+
+        // Check for pressing movement keys. EWsto úsase solo para o animador, para transicionar a animación de idle a run
+        // TODO: esto hai que eliminalo e cambiar a transición de idle -> andar -> correr mediante a velocidade que leve o menda
         IsMovementPressed = inputs.IsMovementPressed;
 
         // Clamp input
@@ -307,7 +399,7 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
 
                     if (inputs.Attack1Down)
                     {
-                        TransitionToState(CharacterState.Attack);
+                        TransitionToState(CharacterState.Attacking);
                     }
 
                     break;
@@ -318,7 +410,7 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                     break;
                 }
             
-            case CharacterState.Attack:
+            case CharacterState.Attacking:
                 {
                     if (canAttack && inputs.Attack1Down)
                     {   
@@ -337,13 +429,13 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
     /// <summary>
     /// This is called every frame by the AI script in order to tell the character what its inputs are
     /// </summary>
-    public void SetInputs(ref AICharacterInputs inputs)
-    {
-        _moveInputVector = inputs.MoveVector;
-        _lookInputVector = inputs.LookVector;
-    }
+    // public void SetInputs(ref AICharacterInputs inputs)
+    // {
+    //     _moveInputVector = inputs.MoveVector;
+    //     _lookInputVector = inputs.LookVector;
+    // }
 
-    private Quaternion _tmpTransientRot;
+    //private Quaternion _tmpTransientRot;
 
     /// <summary>
     /// (Called by KinematicCharacterMotor during its update cycle)
@@ -453,16 +545,29 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
 
             case CharacterState.Interacting:
                 {
-                    currentRotation = _tmpTransientRot;
                     Motor.SetRotation(InteractableRotation);
                     break;
                 }
 
-            case CharacterState.Attack:
+            case CharacterState.Attacking:
                 {
                     //currentRotation = _tmpTransientRot;
                     break;
                 }
+            case CharacterState.Climbing:
+                    {
+                        switch (_climbingState)
+                        {
+                            case ClimbingState.Climbing:
+                                currentRotation = _activeLadder.transform.rotation;
+                                break;
+                            case ClimbingState.Anchoring:
+                            case ClimbingState.DeAnchoring:
+                                currentRotation = Quaternion.Slerp(_anchoringStartRotation, _ladderTargetRotation, (_anchoringTimer / AnchoringDuration));
+                                break;
+                        }
+                        break;
+                    } 
         }
     }
 
@@ -583,11 +688,12 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
             case CharacterState.Interacting:
                 {
                     currentVelocity = Vector3.zero;
+                    // TODO: cambiar o setposition por un lerp, debo mirar como esta implemenmtado no caso das escaleiras
                     Motor.SetPosition(InteractablePosition);
                     break;
                 }
 
-            case CharacterState.Attack:
+            case CharacterState.Attacking:
                 {   
                     // Aqui o interesante sería ter unha lista de ataques con velocidades distintas para cada un, de forma que
                     // cada ataqeu te mova de forma distinta segun o que sea, por jemplo, un stinger movete a dios para adiante
@@ -596,6 +702,23 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                     currentVelocity = Vector3.zero;
                     break;
                 }
+            case CharacterState.Climbing:
+                    {
+                        currentVelocity = Vector3.zero;
+
+                        switch (_climbingState)
+                        {
+                            case ClimbingState.Climbing:
+                                currentVelocity = (_ladderUpDownInput * _activeLadder.transform.up).normalized * ClimbingSpeed;
+                                break;
+                            case ClimbingState.Anchoring:
+                            case ClimbingState.DeAnchoring:
+                                Vector3 tmpPosition = Vector3.Lerp(_anchoringStartPosition, _ladderTargetPosition, (_anchoringTimer / AnchoringDuration));
+                                currentVelocity = Motor.GetVelocityForMovePosition(Motor.TransientPosition, tmpPosition, deltaTime);
+                                break;
+                        }
+                        break;
+                    }
         }
     }
 
@@ -661,10 +784,56 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                 {
                     break;
                 }
-            case CharacterState.Attack:
+            case CharacterState.Attacking:
                 {
                     break;
                 }
+            case CharacterState.Climbing:
+                    {
+                        switch (_climbingState)
+                        {
+                            case ClimbingState.Climbing:
+                                // Detect getting off ladder during climbing
+                                _activeLadder.ClosestPointOnLadderSegment(Motor.TransientPosition, out _onLadderSegmentState);
+                                if (Mathf.Abs(_onLadderSegmentState) > 0.05f)
+                                {
+                                    _climbingState = ClimbingState.DeAnchoring;
+
+                                    // If we're higher than the ladder top point
+                                    if (_onLadderSegmentState > 0)
+                                    {
+                                        _ladderTargetPosition = _activeLadder.TopReleasePoint.position;
+                                        _ladderTargetRotation = _activeLadder.TopReleasePoint.rotation;
+                                    }
+                                    // If we're lower than the ladder bottom point
+                                    else if (_onLadderSegmentState < 0)
+                                    {
+                                        _ladderTargetPosition = _activeLadder.BottomReleasePoint.position;
+                                        _ladderTargetRotation = _activeLadder.BottomReleasePoint.rotation;
+                                    }
+                                }
+                                break;
+                            case ClimbingState.Anchoring:
+                            case ClimbingState.DeAnchoring:
+                                // Detect transitioning out from anchoring states
+                                if (_anchoringTimer >= AnchoringDuration)
+                                {
+                                    if (_climbingState == ClimbingState.Anchoring)
+                                    {
+                                        _climbingState = ClimbingState.Climbing;
+                                    }
+                                    else if (_climbingState == ClimbingState.DeAnchoring)
+                                    {
+                                        TransitionToState(CharacterState.Default);
+                                    }
+                                }
+
+                                // Keep track of time since we started anchoring
+                                _anchoringTimer += deltaTime;
+                                break;
+                        }
+                        break;
+                    }
         }
     }
 

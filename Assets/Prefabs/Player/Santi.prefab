@@ -102,20 +102,25 @@ MonoBehaviour:
   MeshRoot: {fileID: 1674433737556865204}
   CameraFollowPoint: {fileID: 1674433736897173809}
   CrouchedCapsuleHeight: 1
-  _headRaycast: {fileID: 730845696964626351}
-  _torsoRaycast: {fileID: 3206190101463545615}
+  ClimbingSpeed: 4
+  AnchoringDuration: 0.25
+  InteractionLayer:
+    serializedVersion: 2
+    m_Bits: 128
+  HeadRayCast: {fileID: 0}
+  TorsoRaycast: {fileID: 0}
+  LedgeGrabSize: {x: 0.3, y: 0}
+  LedgeGrabDistance: 0.6
+  LedgeGrabOffset: 0.1
   _canLedgeGrab: 1
-  _ledgeGrabSize: {x: 0.3, y: 0}
-  _ledgeGrabDistance: 0.6
-  _ledgeGrabOffset: 0.1
   _ledgeGrabPosition: {x: 0, y: 0, z: 0}
   _ledgeGrabDirection: {x: 0, y: 0, z: 0}
-  _isAttackPressed: 0
-  _moveInputVector: {x: 0, y: 0, z: 0}
-  IsMovementPressed: 0
-  CanMove: 1
   InteractablePosition: {x: 0, y: 0, z: 0}
   InteractableRotation: {x: 0, y: 0, z: 0, w: 0}
+  canAttack: 1
+  currentCombo: 0
+  comboList: []
+  _moveInputVector: {x: 0, y: 0, z: 0}
 --- !u!136 &3331433194316943949
 CapsuleCollider:
   m_ObjectHideFlags: 8

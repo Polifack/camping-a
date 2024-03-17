@@ -13,10 +13,10 @@ public class LedgeGrabBoxes : MonoBehaviour
     void DebugVisualizeRaycasts()
     {
 
-        Vector3 boxSize = new Vector3(psm._ledgeGrabSize.x, 0.05f, psm._ledgeGrabSize.y);
+        Vector3 boxSize = new Vector3(psm.LedgeGrabSize.x, 0.05f, psm.LedgeGrabSize.y);
 
-        DrawBoxCastBox(psm._headRaycast.position, boxSize, transform.rotation, transform.forward, psm._ledgeGrabDistance, Color.red);
-        DrawBoxCastBox(psm._torsoRaycast.position, boxSize, transform.rotation, transform.forward, psm._ledgeGrabDistance, Color.blue);
+        DrawBoxCastBox(psm.HeadRayCast.position, boxSize, transform.rotation, transform.forward, psm.LedgeGrabDistance, Color.red);
+        DrawBoxCastBox(psm.TorsoRaycast.position, boxSize, transform.rotation, transform.forward, psm.LedgeGrabDistance, Color.blue);
 
     }
 
