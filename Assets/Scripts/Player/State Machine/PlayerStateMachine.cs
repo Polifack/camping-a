@@ -186,6 +186,9 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
     private Quaternion _anchoringStartRotation = Quaternion.identity;
     private Quaternion _rotationBeforeClimbing = Quaternion.identity;
 
+    // Interactable vars
+    private InteractableObject _activeInteractable { get; set; }
+
 
     private void Start()
     {
@@ -291,6 +294,8 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
     public void SetInputs(ref PlayerCharacterInputs inputs)
     {
         // Check for interaction input (works for ladders and other interactables)
+        // TODO: esto pode dar problemas por estar aquí, xa que non se comproba si se está no estado Default para ver si podes subirte a unha escaleira ou no.
+        // Hai que testealo e de ser así, distribuilo entre o default e climbing state.
         if (inputs.InteractDown)
         {
             if (Motor.CharacterOverlap(Motor.TransientPosition, Motor.TransientRotation, _probedColliders, InteractionLayer, QueryTriggerInteraction.Collide) > 0)
@@ -317,9 +322,11 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                     }
 
                     // Handle other interactables
-                    else if (_probedColliders[0].gameObject.GetComponent<Interactable>())
+                    InteractableObject interactable = _probedColliders[0].gameObject.GetComponent<InteractableObject>();
+                    else if (interactable)
                     {
-                        //TransitionToState(CharacterState.Interacting);
+                        _activeInteractable = interactable;
+                        TransitionToState(CharacterState.Interacting);
                     }
                 }
             }
@@ -389,12 +396,6 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                     else if (inputs.CrouchUp)
                     {
                         _shouldBeCrouching = false;
-                    }
-
-                    // Interacting input
-                    if (inputs.InteractDown)
-                    {
-                        //TransitionToState(CharacterState.Interacting);
                     }
 
                     if (inputs.Attack1Down)
