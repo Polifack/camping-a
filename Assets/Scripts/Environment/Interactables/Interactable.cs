@@ -8,12 +8,15 @@ using UnityEngine.Events;
 public class Interactable : MonoBehaviour
 {
     public string interactablePrompt;
+    public Transform interactableTransform;
     
     private bool isInteractable = false;
     private bool isWriting = false;
 
     public TextMeshPro text;
     public SpriteRenderer frame;
+
+    public Action action; // Action to be performed when interacted with
 
     public UnityEvent interactCoroutine; // Coroutine to handle the interaction
 

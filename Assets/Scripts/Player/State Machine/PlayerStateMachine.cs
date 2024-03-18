@@ -128,11 +128,6 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
 
     //MERDA MIÑA
 
-    [Header("Interacting")]
-    public Vector3 InteractablePosition;
-    public Quaternion InteractableRotation;
-    
-
     [Header("Attacking")]
     public bool canAttack = true;
     public int currentCombo = 0;
@@ -187,7 +182,7 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
     private Quaternion _rotationBeforeClimbing = Quaternion.identity;
 
     // Interactable vars
-    private InteractableObject _activeInteractable { get; set; }
+    private Interactable _activeInteractable { get; set; }
 
 
     private void Start()
@@ -302,8 +297,13 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
             {
                 if (_probedColliders[0] != null)
                 {
+                    // Store the closest interactable objects
                     // Handle ladders
                     MyLadder ladder = _probedColliders[0].gameObject.GetComponent<MyLadder>();
+                    // Handle other interactables
+                    Interactable interactable = _probedColliders[0].gameObject.GetComponent<Interactable>();
+
+                    // Now we check if the interactable is a ladder or a generic interactable
                     if (ladder)
                     {
                         // Transition to ladder climbing state
@@ -320,9 +320,6 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                             _ladderTargetRotation = _rotationBeforeClimbing;
                         }
                     }
-
-                    // Handle other interactables
-                    InteractableObject interactable = _probedColliders[0].gameObject.GetComponent<InteractableObject>();
                     else if (interactable)
                     {
                         _activeInteractable = interactable;
@@ -449,7 +446,22 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
         {
             // Grounded + Airborne
             case CharacterState.Default:
-                {
+                {   
+                    // Detecting Interactable objects
+                    if (Motor.CharacterOverlap(Motor.TransientPosition, Motor.TransientRotation, _probedColliders, InteractionLayer, QueryTriggerInteraction.Collide) > 0)
+                    {
+                        if (_probedColliders[0] != null)
+                        {
+                            // Handle other interactables
+                            Interactable interactable = _probedColliders[0].gameObject.GetComponent<Interactable>();
+                            if (interactable)
+                            {
+                                interactable.EnableInteract();
+                            }
+                        }
+                    }
+
+                    // Animation handling
                     // Grounded
                     if (Motor.GroundingStatus.IsStableOnGround)
                     {
@@ -486,8 +498,6 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                     break;
                 }
         }
-
-        handleInteract();
     }
 
     /// <summary>
@@ -546,7 +556,7 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
 
             case CharacterState.Interacting:
                 {
-                    Motor.SetRotation(InteractableRotation);
+                    _activeInteractable.action.UpdateRotation();
                     break;
                 }
 
@@ -688,9 +698,8 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
 
             case CharacterState.Interacting:
                 {
-                    currentVelocity = Vector3.zero;
-                    // TODO: cambiar o setposition por un lerp, debo mirar como esta implemenmtado no caso das escaleiras
-                    Motor.SetPosition(InteractablePosition);
+                    //currentVelocity = Vector3.zero;
+                    _activeInteractable.action.UpdateVelocity();
                     break;
                 }
 
@@ -714,7 +723,7 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                                 break;
                             case ClimbingState.Anchoring:
                             case ClimbingState.DeAnchoring:
-                                Vector3 tmpPosition = Vector3.Lerp(_anchoringStartPosition, _ladderTargetPosition, (_anchoringTimer / AnchoringDuration));
+                                Vector3 tmpPosition = Vector3.Lerp(_anchoringStartPosition, _ladderTargetPosition, _anchoringTimer / AnchoringDuration);
                                 currentVelocity = Motor.GetVelocityForMovePosition(Motor.TransientPosition, tmpPosition, deltaTime);
                                 break;
                         }
@@ -972,62 +981,60 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
     // }
 
 
-    void handleInteract()
-    {
-        // 1. raycast forward
-        Debug.DrawRay(transform.position + new Vector3(0, 1, 0), transform.forward * 3, Color.red);
-        RaycastHit hit;
-        Ray r = new Ray(transform.position + new Vector3(0, 1, 0), transform.forward * 3);
-        float distance = 3f;
+    // void handleInteract()
+    // {
+    //     // 1. raycast forward
+    //     Debug.DrawRay(transform.position + new Vector3(0, 1, 0), transform.forward * 3, Color.red);
+    //     RaycastHit hit;
+    //     Ray r = new Ray(transform.position + new Vector3(0, 1, 0), transform.forward * 3);
+    //     float distance = 3f;
 
-        if (Physics.Raycast(r, out hit, distance))
-        {
-            // 2. if we hit an interactable object, display the interactable UI
-            Interactable interactable = hit.collider.GetComponent<Interactable>();
-            if (interactable != null)
-            {
-                interactable.EnableInteract();
-            }
-        }
-    }
+    //     if (Physics.Raycast(r, out hit, distance))
+    //     {
+    //         // 2. if we hit an interactable object, display the interactable UI
+    //         Interactable interactable = hit.collider.GetComponent<Interactable>();
+    //         if (interactable != null)
+    //         {
+    //             interactable.EnableInteract();
+    //         }
+    //     }
+    // }
 
 
-    /// mover a una clase aparte en la que se guarden todas las acciones
-    public IEnumerator PerformAction(string actionName, Vector3 moveTo, Vector3 newRotation, AudioClip playAudio)
-    {
-        // plays an animation and restores to normal state afterwards
-        Vector3 oldPosition = transform.position;
+    // /// mover a una clase aparte en la que se guarden todas las acciones
+    // public IEnumerator PerformAction(string actionName, Vector3 moveTo, Vector3 newRotation, AudioClip playAudio)
+    // {
+    //     // plays an animation and restores to normal state afterwards
+    //     Vector3 oldPosition = transform.position;
 
-        TransitionToState(CharacterState.Interacting);
+    //     TransitionToState(CharacterState.Interacting);
 
-        //_gravity = 0;
-        //_canMove = false;
+    //     //_gravity = 0;
+    //     //_canMove = false;
 
-        //Motor.SetPosition(moveTo);
-        //Motor.SetRotation(Quaternion.Euler(newRotation));
-        InteractablePosition = moveTo;
-        InteractableRotation = Quaternion.Euler(newRotation);
+    //     //Motor.SetPosition(moveTo);
+    //     //Motor.SetRotation(Quaternion.Euler(newRotation));
 
-        _animator.Play(actionName);
-        Debug.Log(playAudio);
-        GameManager.instance.audioSource.PlayOneShot(playAudio);
+    //     _animator.Play(actionName);
+    //     Debug.Log(playAudio);
+    //     GameManager.instance.audioSource.PlayOneShot(playAudio);
         
-        yield return new WaitForSeconds(5);
+    //     yield return new WaitForSeconds(5);
 
-        //TransitionToState(CharacterState.Default);
+    //     //TransitionToState(CharacterState.Default);
 
-        Debug.Log("resetting");
-        //_gravity = -9.8f;
-        //_canMove = true;
-        //Motor.SetPosition(oldPosition);
+    //     Debug.Log("resetting");
+    //     //_gravity = -9.8f;
+    //     //_canMove = true;
+    //     //Motor.SetPosition(oldPosition);
 
-        //_animator.Play("Idle");
+    //     //_animator.Play("Idle");
 
-        // if audio is playing, stop it
-        if (GameManager.instance.audioSource.isPlaying)
-        {
-            GameManager.instance.audioSource.Stop();
-        }
-    }
+    //     // if audio is playing, stop it
+    //     if (GameManager.instance.audioSource.isPlaying)
+    //     {
+    //         GameManager.instance.audioSource.Stop();
+    //     }
+    // }
 
 }
