@@ -229,10 +229,7 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
 
             case CharacterState.Interacting:
                 {
-                    Motor.SetMovementCollisionsSolvingActivation(false);
-                    Motor.SetGroundSolvingActivation(false);
-
-                    _animator.SetBool("isInteracting", true);
+                    _activeInteractable.action.OnStateEnter();
                     break;
                 }
             case CharacterState.Attacking:
@@ -240,9 +237,9 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                     Motor.SetMovementCollisionsSolvingActivation(false);
                     Motor.SetGroundSolvingActivation(false);
 
+                    // This is needed to keep the bool "holdingAttack1" true between states
                     _animator.SetBool("holdingAttack1", true);
 
-                    //_animator.SetBool("isPunching", true);
                     _animator.CrossFade(comboList[currentCombo], 0.1f);
                     break;
                 }
@@ -275,9 +272,7 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                 }
             case CharacterState.Interacting:
                 {
-
-                    _animator.SetBool("isInteracting", false);
-
+                    _activeInteractable.action.OnStateExit();
                     break;
                 }
         }
@@ -979,62 +974,4 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
     //     yield return new WaitForSeconds(0.5f);
     //     _ctx._canLedgeGrab = true;
     // }
-
-
-    // void handleInteract()
-    // {
-    //     // 1. raycast forward
-    //     Debug.DrawRay(transform.position + new Vector3(0, 1, 0), transform.forward * 3, Color.red);
-    //     RaycastHit hit;
-    //     Ray r = new Ray(transform.position + new Vector3(0, 1, 0), transform.forward * 3);
-    //     float distance = 3f;
-
-    //     if (Physics.Raycast(r, out hit, distance))
-    //     {
-    //         // 2. if we hit an interactable object, display the interactable UI
-    //         Interactable interactable = hit.collider.GetComponent<Interactable>();
-    //         if (interactable != null)
-    //         {
-    //             interactable.EnableInteract();
-    //         }
-    //     }
-    // }
-
-
-    // /// mover a una clase aparte en la que se guarden todas las acciones
-    // public IEnumerator PerformAction(string actionName, Vector3 moveTo, Vector3 newRotation, AudioClip playAudio)
-    // {
-    //     // plays an animation and restores to normal state afterwards
-    //     Vector3 oldPosition = transform.position;
-
-    //     TransitionToState(CharacterState.Interacting);
-
-    //     //_gravity = 0;
-    //     //_canMove = false;
-
-    //     //Motor.SetPosition(moveTo);
-    //     //Motor.SetRotation(Quaternion.Euler(newRotation));
-
-    //     _animator.Play(actionName);
-    //     Debug.Log(playAudio);
-    //     GameManager.instance.audioSource.PlayOneShot(playAudio);
-        
-    //     yield return new WaitForSeconds(5);
-
-    //     //TransitionToState(CharacterState.Default);
-
-    //     Debug.Log("resetting");
-    //     //_gravity = -9.8f;
-    //     //_canMove = true;
-    //     //Motor.SetPosition(oldPosition);
-
-    //     //_animator.Play("Idle");
-
-    //     // if audio is playing, stop it
-    //     if (GameManager.instance.audioSource.isPlaying)
-    //     {
-    //         GameManager.instance.audioSource.Stop();
-    //     }
-    // }
-
 }

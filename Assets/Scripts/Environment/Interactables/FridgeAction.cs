@@ -6,33 +6,43 @@ public class FridgeAction : Action
 {
     public AudioClip fridgeSound;
 
-    Vector3 position = new Vector3(-0.9f, 0.1f, -44.3f);
-    Vector3 rotation = new Vector3(0, 90, 0);
-
-    public void execute()
+    public override void OnStateEnter()
     {
-        //GameObject p = GameManager.instance.getPlayer();
-        //StartCoroutine(p.GetComponent<PlayerStateMachine>().PerformAction("sitting", position, rotation, fridgeSound));
-    }
+        player.Motor.SetMovementCollisionsSolvingActivation(false);
+        player.Motor.SetGroundSolvingActivation(false);
 
+        player._animator.CrossFade("sitting", 0.2f);
+        GameManager.instance.audioSource.PlayOneShot(fridgeSound);
+
+    }
 
     public override void BeforeCharacterUpdate()
     {
-        player._animator.Play("sitting");
-        //GameManager.instance.audioSource.PlayOneShot(playAudio);
     }
 
     public override void UpdateRotation()
     {
-        player.Motor.SetPosition(transform.position);
+        if (player.transform.rotation != transform.rotation)
+            {
+                player.Motor.SetRotation(transform.rotation);
+            }
     }
 
     public override void UpdateVelocity()
     {
-        player.Motor.SetRotation(transform.rotation);
+        if (player.transform.position != transform.position)
+        {
+            player.Motor.SetPosition(transform.position);
+        }
+        
     }
 
     public override void AfterCharacterUpdate()
     {
+    }
+
+    public override void OnStateExit()
+    {
+        GameManager.instance.audioSource.Stop();
     }
 }

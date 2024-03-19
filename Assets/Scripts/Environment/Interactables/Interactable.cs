@@ -8,7 +8,6 @@ using UnityEngine.Events;
 public class Interactable : MonoBehaviour
 {
     public string interactablePrompt;
-    public Transform interactableTransform;
     
     private bool isInteractable = false;
     private bool isWriting = false;

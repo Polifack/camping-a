@@ -389,7 +389,6 @@ GameObject:
   - component: {fileID: 171395388}
   - component: {fileID: 171395390}
   - component: {fileID: 171395389}
-  - component: {fileID: 171395391}
   m_Layer: 7
   m_Name: Nevera
   m_TagString: Untagged
@@ -429,14 +428,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   interactablePrompt: Usar la nevera de Wismichu?
-  interactableTransform: {fileID: 1364277062}
   text: {fileID: 2125700630}
   frame: {fileID: 1278129116}
-  action: {fileID: 171395391}
+  action: {fileID: 1364277063}
   interactCoroutine:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 171395391}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: FridgeAction, Assembly-CSharp
         m_MethodName: execute
         m_Mode: 1
@@ -469,20 +467,6 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &171395391
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 171395387}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1173a5cbd0ff2554fbfebcbb554121c4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  player: {fileID: 2138852999}
-  fridgeSound: {fileID: 8300000, guid: 3ac9818e3c5481749a6b9f66081060ca, type: 3}
 --- !u!1 &173114807
 GameObject:
   m_ObjectHideFlags: 0
@@ -552,7 +536,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   interactablePrompt: Jugar al Beer Pong?
-  interactableTransform: {fileID: 0}
   text: {fileID: 1765676146}
   frame: {fileID: 85289689}
   action: {fileID: 0}
@@ -814,7 +797,7 @@ GameObject:
   - component: {fileID: 292695897}
   - component: {fileID: 292695896}
   - component: {fileID: 292695898}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: interactable
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -851,7 +834,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   interactablePrompt: Tony Soprano
-  interactableTransform: {fileID: 1645456717}
   text: {fileID: 2008453532}
   frame: {fileID: 1753337210}
   action: {fileID: 0}
@@ -885,7 +867,7 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
@@ -2932,6 +2914,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1364277062}
+  - component: {fileID: 1364277063}
   m_Layer: 7
   m_Name: ShittingPosition
   m_TagString: Untagged
@@ -2947,13 +2930,27 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1364277061}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.084, z: -0.0586}
+  m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
+  m_LocalPosition: {x: 0.057, y: -0.351, z: -0.0586}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 171395388}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0}
+--- !u!114 &1364277063
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1364277061}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1173a5cbd0ff2554fbfebcbb554121c4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  player: {fileID: 2138852999}
+  fridgeSound: {fileID: 8300000, guid: 3ac9818e3c5481749a6b9f66081060ca, type: 3}
 --- !u!1 &1487780954
 GameObject:
   m_ObjectHideFlags: 0
@@ -3249,7 +3246,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1753337209}
   - component: {fileID: 1753337210}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Frame
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3608,7 +3605,7 @@ GameObject:
   - component: {fileID: 2008453531}
   - component: {fileID: 2008453533}
   - component: {fileID: 2008453532}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Text
   m_TagString: Untagged
   m_Icon: {fileID: 0}
