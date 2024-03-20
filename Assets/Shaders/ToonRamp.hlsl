@@ -28,7 +28,6 @@
 			// toonramp in a smoothstep
 			half toonRamp = smoothstep(ToonRampOffset, ToonRampOffset+ ToonRampSmoothness, d );
 			
-			
 	
 			float3 extraLights;
 			// get the number of point/spot lights
