@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -9,6 +10,13 @@ public class TalkAction : Action
     {
         GameManager.instance.toggleTalkUI();
         GameManager.instance.printDialog("Tony", "carmela sexo");
+    }
+
+    public override void SetInputs(PlayerCharacterInputs inputs)
+    {
+        if (inputs.InteractDown){
+            player.TransitionToState(CharacterState.Default);
+        }
     }
 
     public override void BeforeCharacterUpdate()
@@ -29,5 +37,6 @@ public class TalkAction : Action
 
     public override void OnStateExit()
     {
+        GameManager.instance.toggleTalkUI();
     }
 }

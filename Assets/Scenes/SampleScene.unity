@@ -836,7 +836,7 @@ MonoBehaviour:
   interactablePrompt: Tony Soprano
   text: {fileID: 2008453532}
   frame: {fileID: 1753337210}
-  action: {fileID: 0}
+  action: {fileID: 292695898}
   interactCoroutine:
     m_PersistentCalls:
       m_Calls:
@@ -885,7 +885,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7026a6b84c35fb7458dec8b0153000d0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  player: {fileID: 0}
+  player: {fileID: 2138852999}
 --- !u!1001 &302125111
 PrefabInstance:
   m_ObjectHideFlags: 0

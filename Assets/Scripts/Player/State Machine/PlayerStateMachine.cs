@@ -216,7 +216,7 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
     public void OnStateEnter(CharacterState state, CharacterState fromState)
     {
         // Debug the current state
-        //Debug.Log("Entering state: " + state.ToString());
+        Debug.Log("Entering state: " + state.ToString());
         switch (state)
         {
             case CharacterState.Default:
@@ -400,6 +400,7 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
 
             case CharacterState.Interacting:
                 {
+                    _activeInteractable.action.SetInputs(inputs);
                     break;
                 }
             
