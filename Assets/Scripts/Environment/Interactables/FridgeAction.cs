@@ -16,6 +16,13 @@ public class FridgeAction : Action
 
     }
 
+    public override void SetInputs(PlayerCharacterInputs inputs)
+    {
+        if (inputs.InteractDown){
+            player.TransitionToState(CharacterState.Default);
+        }
+    }
+
     public override void BeforeCharacterUpdate()
     {
     }
@@ -43,6 +50,7 @@ public class FridgeAction : Action
 
     public override void OnStateExit()
     {
+        player._animator.CrossFade("Idle", 0.2f);
         GameManager.instance.audioSource.Stop();
     }
 }
