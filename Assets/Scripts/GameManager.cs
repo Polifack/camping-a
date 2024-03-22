@@ -20,6 +20,7 @@ public class GameManager : MonoBehaviour
     public AudioSource audioSource;
     
     public GameObject talkUI;
+    public GameObject interactUI;
 
     // add an editor script to change the material of the skybox
     public void ChangeSkybox(bool isDay)
@@ -47,6 +48,22 @@ public class GameManager : MonoBehaviour
             }
         }
     }
+
+
+    public void enableInteractUI()
+    {
+        interactUI.SetActive(true);
+    }
+    public void disableInteractUI()
+    {
+        interactUI.SetActive(false);
+    }
+    public void printInteractPrompt(string name, string content)
+    {
+        InteractPromptManager interactWindow = interactUI.GetComponent<InteractPromptManager>();
+        interactWindow.show(name, content);
+    }
+
 
     public void toggleTalkUI()
     {

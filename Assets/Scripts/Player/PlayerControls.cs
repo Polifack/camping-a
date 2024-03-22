@@ -39,24 +39,6 @@ public class PlayerControls : MonoBehaviour
 
         // Struct to pass on to the character controller
         characterInputs = new PlayerCharacterInputs();
-
-        // ESTA MERDA NON VAI
-
-        //Input callbacks, trust me bro they are different
-        // _playerInput = new PlayerInput();
-
-        // //Movement
-        // _playerInput.CharacterControls.Move.started += onMovementInput;
-        // _playerInput.CharacterControls.Move.canceled += onMovementInput;
-        // _playerInput.CharacterControls.Move.performed += onMovementInput;
-        
-        // //Jump
-        // _playerInput.CharacterControls.Jump.started += onJump;
-        // _playerInput.CharacterControls.Jump.canceled += onJump;
-
-        // //Attack
-        // _playerInput.CharacterControls.Attack.started += onAttack;
-        // _playerInput.CharacterControls.Attack.canceled += onAttack;
     }
 
     private void Update()
@@ -137,28 +119,4 @@ public class PlayerControls : MonoBehaviour
         // Apply inputs to character
         Character.SetInputs(ref characterInputs);
     }
-
-    //ESTA PUTA MERDA NON VAI
-
-    // void onMovementInput (InputAction.CallbackContext context)
-    // {
-    //     _currentMovementInput = context.ReadValue<Vector2>();
-    //     Debug.Log("Movement Input: " + _currentMovementInput);
-    //     characterInputs.MoveAxisForward = _currentMovementInput.x;
-    //     characterInputs.MoveAxisRight = _currentMovementInput.y;
-    //     characterInputs.IsMovementPressed = _currentMovementInput.x != 0 || _currentMovementInput.y != 0;
-    // }
-
-    // void onJump(InputAction.CallbackContext context)
-    // {
-    //     characterInputs.JumpDown = context.ReadValueAsButton();
-    //     Debug.Log("Movement Input: " + characterInputs.JumpDown);
-    //     //_requiredNewJumpPress = false;
-    // }
-
-    // void onAttack(InputAction.CallbackContext context)
-    // {
-    //     characterInputs.Attack1Down = context.ReadValueAsButton();
-    //     //_isAttackPressed = false;
-    // }
 }

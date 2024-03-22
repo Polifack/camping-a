@@ -288,6 +288,8 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
         // Hai que testealo e de ser así, distribuilo entre o default e climbing state.
         if (inputs.InteractDown)
         {
+
+            // Check for ladders
             if (Motor.CharacterOverlap(Motor.TransientPosition, Motor.TransientRotation, _probedColliders, InteractionLayer, QueryTriggerInteraction.Collide) > 0)
             {
                 if (_probedColliders[0] != null)
@@ -295,8 +297,6 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                     // Store the closest interactable objects
                     // Handle ladders
                     MyLadder ladder = _probedColliders[0].gameObject.GetComponent<MyLadder>();
-                    // Handle other interactables
-                    Interactable interactable = _probedColliders[0].gameObject.GetComponent<Interactable>();
 
                     // Now we check if the interactable is a ladder or a generic interactable
                     if (ladder)
@@ -315,13 +315,17 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                             _ladderTargetRotation = _rotationBeforeClimbing;
                         }
                     }
-                    else if (interactable)
-                    {
-                        _activeInteractable = interactable;
-                        TransitionToState(CharacterState.Interacting);
-                    }
                 }
             }
+
+
+            if (_activeInteractable != null)
+            {
+                TransitionToState(CharacterState.Interacting);
+                _activeInteractable.Interact();
+            }
+
+
         }
         _ladderUpDownInput = inputs.MoveAxisForward;
 
@@ -444,17 +448,28 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
             case CharacterState.Default:
                 {   
                     // Detecting Interactable objects
-                    if (Motor.CharacterOverlap(Motor.TransientPosition, Motor.TransientRotation, _probedColliders, InteractionLayer, QueryTriggerInteraction.Collide) > 0)
+                    
+                    // problem = the character overlaps even when the object is not in front of the character
+                    // if (Motor.CharacterOverlap(Motor.TransientPosition, Motor.TransientRotation, _probedColliders, InteractionLayer, QueryTriggerInteraction.Collide, 1f) > 0)
+                    // {
+                    // }
+
+                    // interactable objects should be "on front" of character not "colliding" with character
+                    RaycastHit hit;
+                    Vector3 boxSize = new Vector3(1f, 1f, 1f);
+                    bool hasInteractableOnFront = Physics.BoxCast(TorsoRaycast.position, boxSize, transform.forward, out hit, transform.rotation, 1f, InteractionLayer);
+
+                    if (hasInteractableOnFront)
                     {
-                        if (_probedColliders[0] != null)
+                        _activeInteractable = hit.collider.gameObject.GetComponent<Interactable>() ?? null;
+                        _activeInteractable.EnableInteract();
+                    }
+                    else {
+                        if (_activeInteractable != null)
                         {
-                            // Handle other interactables
-                            Interactable interactable = _probedColliders[0].gameObject.GetComponent<Interactable>();
-                            if (interactable)
-                            {
-                                interactable.EnableInteract();
-                            }
+                            _activeInteractable.DisableInteract();
                         }
+                        _activeInteractable = null;
                     }
 
                     // Animation handling
