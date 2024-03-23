@@ -141,8 +141,10 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
     private Collider[] _probedColliders = new Collider[8];
     private RaycastHit[] _probedHits = new RaycastHit[8];
     public Vector3 _moveInputVector;
+    public float _moveInputForAnimator;
+    public float _animInterpolationSpeed = 0.1f;
     private Vector3 _lookInputVector;
-    private bool IsMovementPressed = false;
+    //private bool IsMovementPressed = false;
     private bool _jumpRequested = false;
     private bool _jumpConsumed = false;
     private bool _jumpedThisFrame = false;
@@ -288,8 +290,6 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
         // Hai que testealo e de ser así, distribuilo entre o default e climbing state.
         if (inputs.InteractDown)
         {
-
-            // Check for ladders
             if (Motor.CharacterOverlap(Motor.TransientPosition, Motor.TransientRotation, _probedColliders, InteractionLayer, QueryTriggerInteraction.Collide) > 0)
             {
                 if (_probedColliders[0] != null)
@@ -297,6 +297,8 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                     // Store the closest interactable objects
                     // Handle ladders
                     MyLadder ladder = _probedColliders[0].gameObject.GetComponent<MyLadder>();
+                    // Handle other interactables
+                    Interactable interactable = _probedColliders[0].gameObject.GetComponent<Interactable>();
 
                     // Now we check if the interactable is a ladder or a generic interactable
                     if (ladder)
@@ -315,23 +317,15 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                             _ladderTargetRotation = _rotationBeforeClimbing;
                         }
                     }
+                    else if (interactable)
+                    {
+                        _activeInteractable = interactable;
+                        TransitionToState(CharacterState.Interacting);
+                    }
                 }
             }
-
-
-            if (_activeInteractable != null)
-            {
-                TransitionToState(CharacterState.Interacting);
-                _activeInteractable.Interact();
-            }
-
-
         }
         _ladderUpDownInput = inputs.MoveAxisForward;
-
-        // Check for pressing movement keys. EWsto úsase solo para o animador, para transicionar a animación de idle a run
-        // TODO: esto hai que eliminalo e cambiar a transición de idle -> andar -> correr mediante a velocidade que leve o menda
-        IsMovementPressed = inputs.IsMovementPressed;
 
         // Clamp input
         Vector3 moveInputVector = Vector3.ClampMagnitude(new Vector3(inputs.MoveAxisRight, 0f, inputs.MoveAxisForward), 1f);
@@ -359,6 +353,11 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                 {
                     // Move and look inputs
                     _moveInputVector = cameraPlanarRotation * moveInputVector;
+
+                    //Animator movement
+                    //Lerp movement input for animator to smooth transitions
+                    _moveInputForAnimator = Mathf.Lerp(_moveInputForAnimator, _moveInputVector.magnitude, _animInterpolationSpeed);
+                    _animator.SetFloat("Anim_groundSpeed", _moveInputForAnimator);
 
                     switch (OrientationMethod)
                     {
@@ -447,60 +446,19 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
             // Grounded + Airborne
             case CharacterState.Default:
                 {   
-                    // Detecting Interactable objects
-                    
-                    // problem = the character overlaps even when the object is not in front of the character
-                    // if (Motor.CharacterOverlap(Motor.TransientPosition, Motor.TransientRotation, _probedColliders, InteractionLayer, QueryTriggerInteraction.Collide, 1f) > 0)
+                    // // Detecting Interactable objects
+                    // if (Motor.CharacterOverlap(Motor.TransientPosition, Motor.TransientRotation, _probedColliders, InteractionLayer, QueryTriggerInteraction.Collide) > 0)
                     // {
+                    //     if (_probedColliders[0] != null)
+                    //     {
+                    //         // Handle other interactables
+                    //         Interactable interactable = _probedColliders[0].gameObject.GetComponent<Interactable>();
+                    //         if (interactable)
+                    //         {
+                    //             interactable.EnableInteract();
+                    //         }
+                    //     }
                     // }
-
-                    // interactable objects should be "on front" of character not "colliding" with character
-                    RaycastHit hit;
-                    Vector3 boxSize = new Vector3(1f, 1f, 1f);
-                    bool hasInteractableOnFront = Physics.BoxCast(TorsoRaycast.position, boxSize, transform.forward, out hit, transform.rotation, 1f, InteractionLayer);
-
-                    if (hasInteractableOnFront)
-                    {
-                        _activeInteractable = hit.collider.gameObject.GetComponent<Interactable>() ?? null;
-                        _activeInteractable.EnableInteract();
-                    }
-                    else {
-                        if (_activeInteractable != null)
-                        {
-                            _activeInteractable.DisableInteract();
-                        }
-                        _activeInteractable = null;
-                    }
-
-                    // Animation handling
-                    // Grounded
-                    if (Motor.GroundingStatus.IsStableOnGround)
-                    {
-                        _animator.SetBool("isFalling", false);
-
-                        if (IsMovementPressed)
-                        {
-                            _animator.SetBool("isRunning", true);
-                        }
-                        else
-                        {
-                            _animator.SetBool("isRunning", false);
-                        }
-
-                        if (_jumpRequested)
-                        {
-                            _animator.SetBool("isJumping", true);
-                        }
-                        else
-                        {
-                            _animator.SetBool("isJumping", false);
-                        }
-                    }
-                    // Airborne
-                    else
-                    {
-                        _animator.SetBool("isFalling", true);
-                    }
                     break;
                 }
             case CharacterState.Interacting:
@@ -704,6 +662,8 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                         currentVelocity += _internalVelocityAdd;
                         _internalVelocityAdd = Vector3.zero;
                     }
+
+                    _animator.SetFloat("Anim_airSpeed", currentVelocity.y);
                     break;
                 }
 
@@ -799,6 +759,22 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                             _isCrouching = false;
                         }
                     }
+
+                    // Grounded + Airborne
+                    // Detecting Interactable objects
+                    if (Motor.CharacterOverlap(Motor.TransientPosition, Motor.TransientRotation, _probedColliders, InteractionLayer, QueryTriggerInteraction.Collide) > 0)
+                    {
+                        if (_probedColliders[0] != null)
+                        {
+                            // Handle other interactables
+                            Interactable interactable = _probedColliders[0].gameObject.GetComponent<Interactable>();
+                            if (interactable)
+                            {
+                                interactable.EnableInteract();
+                            }
+                        }
+                    }
+
                     break;
                 }
             case CharacterState.Interacting:
@@ -912,10 +888,26 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
 
     protected void OnLanded()
     {
+        switch (CurrentCharacterState)
+        {
+            case CharacterState.Default:
+                {
+                    _animator.SetBool("isFalling", false);
+                    break;
+                }
+        }
     }
 
     protected void OnLeaveStableGround()
     {
+        switch (CurrentCharacterState)
+        {
+            case CharacterState.Default:
+                {
+                    _animator.SetBool("isFalling", true);
+                    break;
+                }
+        }
     }
 
     public void OnDiscreteCollisionDetected(Collider hitCollider)
