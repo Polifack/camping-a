@@ -47,7 +47,6 @@ public class BenchAction : Action
     {
         Debug.Log("Exiting");
         
-        player._animator.CrossFade("Idle", 0.2f);
-        player.TransitionToState(CharacterState.Default);
+        player._animator.CrossFade("Locomotion", 0.08f);
     }
 }

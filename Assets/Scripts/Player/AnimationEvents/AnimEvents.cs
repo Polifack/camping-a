@@ -15,7 +15,7 @@ public class AnimEvents : MonoBehaviour
 
     public void ReturnToDefaultState()
     {
-        Debug.Log("Exiting");
+        //Debug.Log("Exiting");
         playerStateMachine.TransitionToState(CharacterState.Default);
     }
     
