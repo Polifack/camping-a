@@ -22,7 +22,8 @@ public class GameManager : MonoBehaviour
     public GameObject talkUI;
     public GameObject interactUI;
 
-    // add an editor script to change the material of the skybox
+
+    // DAYNIGHT CYCLE
     public void ChangeSkybox(bool isDay)
     {
         if (isDay)
@@ -50,6 +51,8 @@ public class GameManager : MonoBehaviour
     }
 
 
+
+    // INTERACT UI
     public void enableInteractUI()
     {
         interactUI.SetActive(true);
@@ -65,16 +68,29 @@ public class GameManager : MonoBehaviour
     }
 
 
-    public void toggleTalkUI()
+
+    // DIALOG UI
+    public void enableTalkUI()
     {
-        talkUI.SetActive(!talkUI.activeSelf);
+        talkUI.SetActive(true);
+    }
+    public void disableTalkUI()
+    {
+        talkUI.SetActive(false);
     }
     public void printDialog(string name, string content)
     {
         DialogManager dialogWindow = talkUI.GetComponent<DialogManager>();
         dialogWindow.show(name, content);
     }
+    public bool isTalkingDone()
+    {
+        DialogManager dialogWindow = talkUI.GetComponent<DialogManager>();
+        return !dialogWindow.isWriting;
+    }
 
+
+    // SINGLETON
     private void Awake()
     {
         if (instance == null)
@@ -86,14 +102,5 @@ public class GameManager : MonoBehaviour
     public GameObject getPlayer()
     {
         return player;
-    }
-
-    private void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.L))
-        {
-            isDay = !isDay;
-            ChangeSkybox(isDay);
-        }
     }
 }

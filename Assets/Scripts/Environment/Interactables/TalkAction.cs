@@ -6,16 +6,27 @@ using UnityEngine.UIElements;
 
 public class TalkAction : Action
 {
+    public string talkerName;
+    public string talkContent;
+
     public override void OnStateEnter()
     {
-        GameManager.instance.toggleTalkUI();
-        GameManager.instance.printDialog("Tony", "carmela sexo");
+        GameManager.instance.enableTalkUI();
+        GameManager.instance.printDialog(talkerName, talkContent);
     }
 
     public override void SetInputs(PlayerCharacterInputs inputs)
     {
-        if (inputs.InteractDown){
-            player.TransitionToState(CharacterState.Default);
+        if (inputs.InteractDown)
+        {
+            Debug.Log("InteractDown");
+            if (GameManager.instance.isTalkingDone())
+            {
+                // player.TransitionToState(CharacterState.Default);
+                // problem: just after the player exits the talk state it interacts again
+                // solution: add a delay to the interact button
+                GameManager.instance.disableTalkUI();
+            }
         }
     }
 
@@ -37,6 +48,6 @@ public class TalkAction : Action
 
     public override void OnStateExit()
     {
-        GameManager.instance.toggleTalkUI();
+        GameManager.instance.disableTalkUI();
     }
 }

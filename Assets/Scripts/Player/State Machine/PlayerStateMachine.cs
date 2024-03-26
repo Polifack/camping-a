@@ -189,7 +189,6 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
 
     private void Start()
     {
-
         // Assign the characterController to the motor
         Motor.CharacterController = this;
 
@@ -290,6 +289,8 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
         // Hai que testealo e de ser así, distribuilo entre o default e climbing state.
         if (inputs.InteractDown)
         {
+            
+
             if (Motor.CharacterOverlap(Motor.TransientPosition, Motor.TransientRotation, _probedColliders, InteractionLayer, QueryTriggerInteraction.Collide) > 0)
             {
                 if (_probedColliders[0] != null)
@@ -421,18 +422,14 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
         }
     }
 
-    
-
     /// <summary>
     /// This is called every frame by the AI script in order to tell the character what its inputs are
     /// </summary>
-    // public void SetInputs(ref AICharacterInputs inputs)
-    // {
-    //     _moveInputVector = inputs.MoveVector;
-    //     _lookInputVector = inputs.LookVector;
-    // }
-
-    //private Quaternion _tmpTransientRot;
+    public void SetInputs(ref AICharacterInputs inputs)
+    {
+        _moveInputVector = inputs.MoveVector;
+        _lookInputVector = inputs.LookVector;
+    }
 
     /// <summary>
     /// (Called by KinematicCharacterMotor during its update cycle)

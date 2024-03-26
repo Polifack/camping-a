@@ -9,6 +9,7 @@ public class DialogManager : MonoBehaviour
     public TextMeshProUGUI dialogText;
 
     private bool _isWriting = false;
+    public bool isWriting { get { return _isWriting; } }
 
 
     IEnumerator writeText(string content, float delay = 0.05f)
@@ -21,6 +22,7 @@ public class DialogManager : MonoBehaviour
             dialogText.text = content.Substring(0, i);
             yield return new WaitForSeconds(delay);
         }
+        _isWriting = false; // Reset the flag to indicate that the coroutine has finished
     }
 
     public void show(string name, string text)
