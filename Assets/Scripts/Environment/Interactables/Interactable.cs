@@ -13,23 +13,31 @@ public class Interactable : MonoBehaviour
 
     private float interactableFadeTime = .5f;
     private float currentFadeTime = 0f;
+    private bool isInteracting = false;
     
     public Action action; // Action to be performed when interacted with
 
 
     public void EnableInteract()
     {
+        if (isInteracting){
+            currentFadeTime = 0f;
+            return;
+        } 
+
         GameManager.instance.enableInteractUI();
         GameManager.instance.printInteractPrompt(interactableName, interactablePrompt);
         currentFadeTime = 0f;
+        isInteracting = true;
     }
     public void DisableInteract()
     {
+        isInteracting = false;
         GameManager.instance.disableInteractUI();
     }
 
-    public void Update(){
-        if (GameManager.instance.interactUI.activeSelf){
+    public void FixedUpdate(){
+        if (isInteracting){
             currentFadeTime += Time.deltaTime;
             if (currentFadeTime >= interactableFadeTime){
                 DisableInteract();
