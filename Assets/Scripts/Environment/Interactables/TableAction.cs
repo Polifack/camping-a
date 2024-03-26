@@ -2,20 +2,21 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class FridgeAction : Action
+public class TableAction : Action
 {
-    public AudioClip shitSound;
-    public ParticleSystem shitParticles;
-
-
+    public float sittingTime = 2f;
+    public Transform[] sittingPositions;
+    private int currentPos = 0;
+ 
     public override void OnStateEnter()
     {
+        // take a random sitting position
+        currentPos = Random.Range(0, sittingPositions.Length);
+
         player.Motor.SetMovementCollisionsSolvingActivation(false);
         player.Motor.SetGroundSolvingActivation(false);
 
         player._animator.CrossFade("sitting", 0.2f);
-        GameManager.instance.audioSource.PlayOneShot(shitSound);
-        shitParticles.Play();
     }
 
     public override void SetInputs(PlayerCharacterInputs inputs)
@@ -28,17 +29,17 @@ public class FridgeAction : Action
 
     public override void UpdateRotation()
     {
-        if (player.transform.rotation != transform.rotation)
+        if (player.transform.rotation != sittingPositions[currentPos].transform.rotation)
             {
-                player.Motor.SetRotation(transform.rotation);
+                player.Motor.SetRotation(sittingPositions[currentPos].transform.rotation);
             }
     }
 
     public override void UpdateVelocity()
     {
-        if (player.transform.position != transform.position)
+        if (player.transform.position != sittingPositions[currentPos].position)
         {
-            player.Motor.SetPosition(transform.position);
+            player.Motor.SetPosition(sittingPositions[currentPos].transform.position);
         }
         
     }
@@ -53,7 +54,5 @@ public class FridgeAction : Action
         
         player._animator.CrossFade("Idle", 0.2f);
         player.TransitionToState(CharacterState.Default);
-        GameManager.instance.audioSource.Stop();
-        shitParticles.Stop();
     }
 }

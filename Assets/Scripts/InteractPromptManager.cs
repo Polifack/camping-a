@@ -11,8 +11,6 @@ public class InteractPromptManager : MonoBehaviour
     public void show(string name, string text)
     {
         // this should be shown by raycasting the interactable object towards the canvas
-        
-
         interactableName.text = name;
         interactableAction.text = text;
     }

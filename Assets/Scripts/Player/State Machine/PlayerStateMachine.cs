@@ -185,7 +185,7 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
 
     // Interactable vars
     private Interactable _activeInteractable { get; set; }
-
+    
 
     private void Start()
     {

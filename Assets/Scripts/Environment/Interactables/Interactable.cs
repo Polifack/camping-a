@@ -11,25 +11,31 @@ public class Interactable : MonoBehaviour
     public string interactableName;
     public string interactablePrompt;
 
-
+    private float interactableFadeTime = .5f;
+    private float currentFadeTime = 0f;
     
     public Action action; // Action to be performed when interacted with
-    public UnityEvent interactCoroutine; // Coroutine to handle the interaction
 
-    public virtual void Interact()
-    {
-        Debug.Log(interactablePrompt);
-        interactCoroutine.Invoke();
-    }
 
     public void EnableInteract()
     {
         GameManager.instance.enableInteractUI();
         GameManager.instance.printInteractPrompt(interactableName, interactablePrompt);
+        currentFadeTime = 0f;
     }
     public void DisableInteract()
     {
         GameManager.instance.disableInteractUI();
+    }
+
+    public void Update(){
+        if (GameManager.instance.interactUI.activeSelf){
+            currentFadeTime += Time.deltaTime;
+            if (currentFadeTime >= interactableFadeTime){
+                DisableInteract();
+                currentFadeTime = 0f;
+            }
+        }
     }
 
 }

@@ -2,20 +2,16 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class FridgeAction : Action
+public class BenchAction : Action
 {
-    public AudioClip shitSound;
-    public ParticleSystem shitParticles;
-
-
+    public float sittingTime = 2f;
+ 
     public override void OnStateEnter()
     {
         player.Motor.SetMovementCollisionsSolvingActivation(false);
         player.Motor.SetGroundSolvingActivation(false);
 
         player._animator.CrossFade("sitting", 0.2f);
-        GameManager.instance.audioSource.PlayOneShot(shitSound);
-        shitParticles.Play();
     }
 
     public override void SetInputs(PlayerCharacterInputs inputs)
@@ -53,7 +49,5 @@ public class FridgeAction : Action
         
         player._animator.CrossFade("Idle", 0.2f);
         player.TransitionToState(CharacterState.Default);
-        GameManager.instance.audioSource.Stop();
-        shitParticles.Stop();
     }
 }
