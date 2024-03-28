@@ -4,6 +4,8 @@
 * Permitir rotación no momento no que o ataque esté cargado, para poder redirigilo, esto faise añadidndo un animation Event. Referencia de como facelo: elden ring
 * Añadir hitboxes distintas ou actualizar os datos dunha misma hitbox para os ataques, esto hai que ver como queda mellor
 
+* ARREGLADO BUG: o crossfade final de salir do ataque 1 e iniciar o ataque 2 a veces falla debido ao animation event que hai colocado ao final do Punch1_R. Ese evento devólvete ao DefaultState, entonces dependendo de como suceda o crossfade, ao enganchar o ataque 2 como combo, este realízase no DefaultState, permitindo movimiento e tal. Pasaría o mismo co ataque 2 e os siguientes ataques do combo. Teño que mirar como poder solucionar esto. ARREGLADO: Metin un statemachinebehaviour no state de locomotion que transiciona sempre ao DefaultState. Esto deberia funcionar ben sempre, pero deixoo anotado para ter en conta que esta transición se fai polo animator.
+
 ## Climbing Stairs State ##
 * BUG: por algún motivo, se non pulsas teclas de movimiento volves ao default statre e caes da escaleira. Acabo de darme conta de por que: porque ao non haber aind animación de escalar, e usarse a animacion idle, esta ten un evento de resetear o estado ao Default, polo que se cae da escaleira. Ao añadir a animacioón de escalada pertinente, esto debería arreglarse solo.
 

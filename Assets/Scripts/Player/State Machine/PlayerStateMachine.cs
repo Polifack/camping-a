@@ -135,6 +135,8 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
     [Header("Attacking")]
     public bool canAttack = true;
     public int currentCombo = 0;
+
+    public bool canRotateWhileAttacking = false;
     
     [System.Serializable]
     public struct GroundAttackData{
@@ -435,6 +437,19 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
             
             case CharacterState.Attacking:
                 {
+                    // Move and look inputs
+                    _moveInputVector = cameraPlanarRotation * moveInputVector;
+
+                    switch (OrientationMethod)
+                    {
+                        case OrientationMethod.TowardsCamera:
+                            _lookInputVector = cameraPlanarDirection;
+                            break;
+                        case OrientationMethod.TowardsMovement:
+                            _lookInputVector = _moveInputVector.normalized;
+                            break;
+                    }
+
                     if (canAttack && inputs.Attack1Down)
                     {   
                         // ao pulsar o boton empeza a contar como held, hasta que se solte
@@ -553,6 +568,15 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
 
             case CharacterState.Attacking:
                 {
+                    if (canRotateWhileAttacking)
+                    {
+                        // Smoothly interpolate from current to target look direction
+                        Vector3 smoothedLookInputDirection = Vector3.Slerp(Motor.CharacterForward, _lookInputVector, 1 - Mathf.Exp(-OrientationSharpness * deltaTime)).normalized;
+
+                        // Set the current rotation (which will be used by the KinematicCharacterMotor)
+                        currentRotation = Quaternion.LookRotation(smoothedLookInputDirection, Motor.CharacterUp);
+                    }
+
                     //currentRotation = _tmpTransientRot;
                     break;
                 }

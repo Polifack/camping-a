@@ -72,4 +72,14 @@ public class AnimEvents : MonoBehaviour
     {
         playerStateMachine.AllowMovementAttack = false;
     }
+
+    public void EnableRotationWhileAttacking()
+    {
+        playerStateMachine.canRotateWhileAttacking = true;
+    }
+
+    public void DisableRotationWhileAttacking()
+    {
+        playerStateMachine.canRotateWhileAttacking = false;
+    }
 }

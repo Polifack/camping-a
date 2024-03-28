@@ -29814,8 +29814,22 @@ AnimationClip:
   m_HasGenericRootTransform: 0
   m_HasMotionFloatCurves: 1
   m_Events:
+  - time: 0
+    functionName: EnableRotationWhileAttacking
+    data: 
+    objectReferenceParameter: {fileID: 0}
+    floatParameter: 0
+    intParameter: 0
+    messageOptions: 0
   - time: 0.125
     functionName: EnableMovementAttack
+    data: 
+    objectReferenceParameter: {fileID: 0}
+    floatParameter: 0
+    intParameter: 0
+    messageOptions: 0
+  - time: 0.20833333
+    functionName: DisableRotationWhileAttacking
     data: 
     objectReferenceParameter: {fileID: 0}
     floatParameter: 0
@@ -29830,13 +29844,6 @@ AnimationClip:
     messageOptions: 0
   - time: 0.41666666
     functionName: Event_NextCombo
-    data: 
-    objectReferenceParameter: {fileID: 0}
-    floatParameter: 0
-    intParameter: 0
-    messageOptions: 0
-  - time: 0.7083333
-    functionName: ReturnToDefaultState
     data: 
     objectReferenceParameter: {fileID: 0}
     floatParameter: 0
