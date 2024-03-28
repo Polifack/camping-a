@@ -116,6 +116,10 @@ public class PlayerControls : MonoBehaviour
         characterInputs.InteractDown = Input.GetKeyDown(KeyCode.E);
         characterInputs.InteractUp = Input.GetKeyUp(KeyCode.E);
 
+        characterInputs.ShiftHeld = Input.GetKey(KeyCode.LeftShift);
+
+        characterInputs.CaralladaDown = Input.GetKeyDown(KeyCode.Q);
+
         // Apply inputs to character
         Character.SetInputs(ref characterInputs);
     }

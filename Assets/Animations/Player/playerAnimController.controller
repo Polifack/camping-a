@@ -148,6 +148,32 @@ AnimatorStateMachine:
   m_ExitPosition: {x: 800, y: 120, z: 0}
   m_ParentStateMachinePosition: {x: 800, y: 20, z: 0}
   m_DefaultState: {fileID: -2405147791937124741}
+--- !u!1102 &-5916269563050455148
+AnimatorState:
+  serializedVersion: 6
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Carallada
+  m_Speed: 1
+  m_CycleOffset: 0
+  m_Transitions: []
+  m_StateMachineBehaviours: []
+  m_Position: {x: 50, y: 50, z: 0}
+  m_IKOnFeet: 0
+  m_WriteDefaultValues: 1
+  m_Mirror: 0
+  m_SpeedParameterActive: 0
+  m_MirrorParameterActive: 0
+  m_CycleOffsetParameterActive: 0
+  m_TimeParameterActive: 0
+  m_Motion: {fileID: 7400000, guid: 574c008583b01e244b1662a1bcdcbc0a, type: 2}
+  m_Tag: 
+  m_SpeedParameter: 
+  m_MirrorParameter: 
+  m_CycleOffsetParameter: 
+  m_TimeParameter: 
 --- !u!1102 &-5734822273120920401
 AnimatorState:
   serializedVersion: 6
@@ -506,7 +532,7 @@ AnimatorStateMachine:
     m_Position: {x: 240, y: 290, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 1101420797964992801}
-    m_Position: {x: 30, y: -30, z: 0}
+    m_Position: {x: -70, y: -70, z: 0}
   - serializedVersion: 1
     m_State: {fileID: -2029597276401937683}
     m_Position: {x: 90, y: 360, z: 0}
@@ -519,6 +545,9 @@ AnimatorStateMachine:
   - serializedVersion: 1
     m_State: {fileID: -2610576623455396199}
     m_Position: {x: 670, y: 110, z: 0}
+  - serializedVersion: 1
+    m_State: {fileID: -5916269563050455148}
+    m_Position: {x: -70, y: -10, z: 0}
   m_ChildStateMachines:
   - serializedVersion: 1
     m_StateMachine: {fileID: -6170534473081411357}
@@ -887,7 +916,7 @@ BlendTree:
   m_Name: Locomotion
   m_Childs:
   - serializedVersion: 2
-    m_Motion: {fileID: 7400000, guid: cc9608795e7c8ba4db0ab635df6b85b8, type: 2}
+    m_Motion: {fileID: 7400000, guid: 5e243278e752435419e99fccd7a3decc, type: 2}
     m_Threshold: 0
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
@@ -898,7 +927,7 @@ BlendTree:
     m_Motion: {fileID: 7400000, guid: 02ef4221898efa4428d90e8422040e16, type: 2}
     m_Threshold: 0.1
     m_Position: {x: 0, y: 0}
-    m_TimeScale: 1
+    m_TimeScale: 0.8
     m_CycleOffset: 0
     m_DirectBlendParameter: Blend
     m_Mirror: 0

@@ -62,4 +62,14 @@ public class AnimEvents : MonoBehaviour
 
         anim.SetBool("finishedChargingAttack", false);
     }
+
+    public void EnableMovementAttack()
+    {
+        playerStateMachine.AllowMovementAttack = true;
+    }
+
+    public void DisableMovementAttack()
+    {
+        playerStateMachine.AllowMovementAttack = false;
+    }
 }

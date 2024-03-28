@@ -48,6 +48,10 @@ public struct PlayerCharacterInputs
 
     public bool InteractDown;
     public bool InteractUp;
+
+    public bool ShiftHeld;
+
+    public bool CaralladaDown;
 }
 
 public struct AICharacterInputs
@@ -131,15 +135,26 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
     [Header("Attacking")]
     public bool canAttack = true;
     public int currentCombo = 0;
-    //Create a string list array to store the combo list
-    public string[] comboList;
+    
+    [System.Serializable]
+    public struct GroundAttackData{
+        public string animName;
+        //public float knockback;
+        //public Vector3 knockbackDir;
+        //public float damage;
+        public float forwardSpeed;
+    }
 
+    public bool AllowMovementAttack;
+
+    [SerializeField] public GroundAttackData[] comboList;
 
     // PRIVATE VARIABLES --------------------------------------------------
+    
     public CharacterState CurrentCharacterState { get; private set; }
-
     private Collider[] _probedColliders = new Collider[8];
     private RaycastHit[] _probedHits = new RaycastHit[8];
+    [Header("Private Variables")]
     public Vector3 _moveInputVector;
     public float _moveInputForAnimator;
     public float _animInterpolationSpeed = 0.1f;
@@ -235,13 +250,13 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                 }
             case CharacterState.Attacking:
                 {
-                    Motor.SetMovementCollisionsSolvingActivation(false);
-                    Motor.SetGroundSolvingActivation(false);
+                    //Motor.SetMovementCollisionsSolvingActivation(false);
+                    //Motor.SetGroundSolvingActivation(false);
 
                     // This is needed to keep the bool "holdingAttack1" true between states
                     _animator.SetBool("holdingAttack1", true);
 
-                    _animator.CrossFade(comboList[currentCombo], 0.1f);
+                    _animator.CrossFade(comboList[currentCombo].animName, 0.1f);
                     break;
                 }
             case CharacterState.Climbing:
@@ -290,7 +305,6 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
         if (inputs.InteractDown)
         {
             
-
             if (Motor.CharacterOverlap(Motor.TransientPosition, Motor.TransientRotation, _probedColliders, InteractionLayer, QueryTriggerInteraction.Collide) > 0)
             {
                 if (_probedColliders[0] != null)
@@ -352,6 +366,11 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
             // Grounded + Airborne
             case CharacterState.Default:
                 {
+                    //If shift is held, halve the moveInputVector
+                    if (inputs.ShiftHeld)
+                    {
+                        moveInputVector *= 0.2f;
+                    }
                     // Move and look inputs
                     _moveInputVector = cameraPlanarRotation * moveInputVector;
 
@@ -399,6 +418,12 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                         TransitionToState(CharacterState.Attacking);
                     }
 
+                    if (inputs.CaralladaDown)
+                    {
+                        //Debug.Log("Carallada");
+                        _animator.CrossFade("Carallada", 0.2f);
+                    }
+
                     break;
                 }
 
@@ -415,7 +440,7 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                         // ao pulsar o boton empeza a contar como held, hasta que se solte
                         _animator.SetBool("holdingAttack1", true);
                         // iniciar a animacion
-                        _animator.CrossFade(comboList[currentCombo], 0.1f);
+                        _animator.CrossFade(comboList[currentCombo].animName, 0.1f);
                     }
                     break;
                 }
@@ -425,11 +450,11 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
     /// <summary>
     /// This is called every frame by the AI script in order to tell the character what its inputs are
     /// </summary>
-    public void SetInputs(ref AICharacterInputs inputs)
-    {
-        _moveInputVector = inputs.MoveVector;
-        _lookInputVector = inputs.LookVector;
-    }
+    // public void SetInputs(ref AICharacterInputs inputs)
+    // {
+    //     _moveInputVector = inputs.MoveVector;
+    //     _lookInputVector = inputs.LookVector;
+    // }
 
     /// <summary>
     /// (Called by KinematicCharacterMotor during its update cycle)
@@ -677,7 +702,15 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                     // cada ataqeu te mova de forma distinta segun o que sea, por jemplo, un stinger movete a dios para adiante
                     // o seu sería implementar unha lista de ataques e que cada elemento desa lista teña algo rollo
                     // moveSpeed, knockback, knockbackDir, damage, etc
-                    currentVelocity = Vector3.zero;
+                    //currentVelocity = Vector3.zero;
+                    if (AllowMovementAttack)
+                    {
+                        currentVelocity = Motor.GetVelocityForMovePosition(Motor.TransientPosition, Motor.TransientPosition + (comboList[currentCombo].forwardSpeed * Motor.CharacterForward), deltaTime);
+                        AllowMovementAttack = false;
+                    }
+                    // Gravity
+                    currentVelocity += Gravity * deltaTime;
+
                     break;
                 }
             case CharacterState.Climbing:

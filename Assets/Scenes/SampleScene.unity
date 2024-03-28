@@ -1497,18 +1497,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: -1.7883323
       objectReference: {fileID: 0}
-    - target: {fileID: 5576969488778966451, guid: afd49a45c318aac44aa488db7cb8927c, type: 3}
-      propertyPath: m_Height
-      value: 3
-      objectReference: {fileID: 0}
-    - target: {fileID: 5576969488778966451, guid: afd49a45c318aac44aa488db7cb8927c, type: 3}
-      propertyPath: m_Radius
-      value: 0.4
-      objectReference: {fileID: 0}
-    - target: {fileID: 5576969488778966451, guid: afd49a45c318aac44aa488db7cb8927c, type: 3}
-      propertyPath: m_Center.y
-      value: 1.32
-      objectReference: {fileID: 0}
     - target: {fileID: 5594769282892522489, guid: afd49a45c318aac44aa488db7cb8927c, type: 3}
       propertyPath: m_Name
       value: SantiParent
@@ -1524,6 +1512,22 @@ PrefabInstance:
     - target: {fileID: 5653727536990019610, guid: afd49a45c318aac44aa488db7cb8927c, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: -1.8834952
+      objectReference: {fileID: 0}
+    - target: {fileID: 6131766309591171467, guid: afd49a45c318aac44aa488db7cb8927c, type: 3}
+      propertyPath: comboList.Array.data[0].animName
+      value: Punch1_C
+      objectReference: {fileID: 0}
+    - target: {fileID: 6131766309591171467, guid: afd49a45c318aac44aa488db7cb8927c, type: 3}
+      propertyPath: comboList.Array.data[1].animName
+      value: Punch2_C
+      objectReference: {fileID: 0}
+    - target: {fileID: 6131766309591171467, guid: afd49a45c318aac44aa488db7cb8927c, type: 3}
+      propertyPath: comboList.Array.data[0].forwardSpeed
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6131766309591171467, guid: afd49a45c318aac44aa488db7cb8927c, type: 3}
+      propertyPath: comboList.Array.data[1].forwardSpeed
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6353603410299157302, guid: afd49a45c318aac44aa488db7cb8927c, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
