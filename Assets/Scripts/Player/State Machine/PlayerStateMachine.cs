@@ -706,7 +706,10 @@ public class PlayerStateMachine : MonoBehaviour, ICharacterController
                     if (AllowMovementAttack)
                     {
                         currentVelocity = Motor.GetVelocityForMovePosition(Motor.TransientPosition, Motor.TransientPosition + (comboList[currentCombo].forwardSpeed * Motor.CharacterForward), deltaTime);
-                        AllowMovementAttack = false;
+                    }
+                    else
+                    {
+                        currentVelocity = Vector3.zero;
                     }
                     // Gravity
                     currentVelocity += Gravity * deltaTime;
